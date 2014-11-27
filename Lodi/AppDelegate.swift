@@ -12,10 +12,23 @@ import UIKit
 class AppDelegate: UIResponder, UIApplicationDelegate {
 
     var window: UIWindow?
-
+    var app = UIApplication.sharedApplication()
+    
+    var screen = Screen()
+    
+    var resources: Dictionary<String, Resource> = [:]
+    
 
     func application(application: UIApplication, didFinishLaunchingWithOptions launchOptions: [NSObject: AnyObject]?) -> Bool {
         // Override point for customization after application launch.
+        
+        self.addResource("http://ja.dbpedia.org/resource/品川区", type: ResourceType.uri)
+        self.addResource("http://ja.dbpedia.org/resource/台東区", type: ResourceType.uri)
+        self.addResource("http://ja.dbpedia.org/resource/練馬区", type: ResourceType.uri)
+        self.addResource("http://ja.dbpedia.org/resource/港区", type: ResourceType.uri)
+        
+        
+        
         return true
     }
 
@@ -40,7 +53,45 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     func applicationWillTerminate(application: UIApplication) {
         // Called when the application is about to terminate. Save data if appropriate. See also applicationDidEnterBackground:.
     }
-
+    
+    func addResource(uri: String, type: ResourceType) {
+        self.resources[uri] = Resource(value: uri, type: type)
+    }
+    
+    func getResource(index: Int) -> Resource {
+        var keys = self.resources.keys
+        return self.resources[keys.array[index]]!
+    }
+    
+    func addResourceFromNTriples(ntriples: [NTriplesTriple]) {
+        for ntriple in ntriples {
+            var type = ResourceType.none, value = ""
+            if ntriple.s.type == NTriplesPartType.uri {
+                type = ResourceType.uri
+            } else {
+                type = ResourceType.literal
+            }
+            self.addResource(ntriple.s.value, type: type)
+            if ntriple.p.type == NTriplesPartType.uri {
+                type = ResourceType.uri
+            } else {
+                type = ResourceType.literal
+            }
+            self.addResource(ntriple.p.value, type: type)
+            if ntriple.o.type == NTriplesPartType.uri {
+                type = ResourceType.uri
+            } else {
+                type = ResourceType.literal
+            }
+            self.addResource(ntriple.o.value, type: type)
+        }
+    }
+    
+    struct Screen {
+        var rect = UIScreen.mainScreen().bounds
+        var width = UIScreen.mainScreen().bounds.size.width
+        var height = UIScreen.mainScreen().bounds.size.height
+    }
 
 }
 
