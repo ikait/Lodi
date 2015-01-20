@@ -15,7 +15,8 @@ class SearchResultTableViewController: UITableViewController {
     var result: SearchResultController!
     var nextResult: Turtle!
     
-    let endpointUri = "http://ja.dbpedia.org/sparql"
+    //let endpointUri = "http://dbpedia.org/sparql"
+    let endpointUri = "http://www.wikipediaontology.org/query/"
     var dataReceiver: LDDataReceiver!
     
     var cancelButton: UIBarButtonItem!
@@ -38,8 +39,12 @@ class SearchResultTableViewController: UITableViewController {
         self.cancelButton = UIBarButtonItem(barButtonSystemItem: UIBarButtonSystemItem.Cancel, target: self, action: "cancelButtonDidTouchUpInside:")
         self.cancelButton.enabled = false
         self.navigationItem.rightBarButtonItem = self.cancelButton
+        self.navigationItem.title = NSLocalizedString("Search Results", comment: "")
         
-        self.navigationItem.title = "Search Results"
+        // to fix issue tabbar covers tableview
+        // * there is no self.tabbarController when it presents modally
+        self.edgesForExtendedLayout = UIRectEdge.All
+        self.tableView.contentInset.bottom = 49  // XXX
     }
     
     override func didReceiveMemoryWarning() {
@@ -73,12 +78,22 @@ class SearchResultTableViewController: UITableViewController {
     
     func cellHasUriDidTouchUpInside(uri: String) {  // FIXME: uri/クエリ決めうち
         self.readyForReceiving()
-    
-        var query = "construct where { <\(uri)> ?p ?o }"
+        
+        var query = "CONSTRUCT {\n"  // TODO: make uri/query dynamically
+        query += "<\(uri)> ?p ?o\n"
+        //query += "MINUS { <\(uri)> owl:sameAs ?o }\n"
+        query += "\n}"
+        
+        query += "\n"
+        query += "WHERE {\n"
+        query += "<\(uri)> ?p ?o\n"
+        query += "\n}"
+        
+        println(query)
         
         var connection = LDURLConnection(url: NSURL(string: endpointUri)!)
         connection.setRequestMethod("POST")
-        connection.setRequestBodyWithPercentEscaping("query=\(query)&format=text/turtle")
+        connection.setRequestBodyWithPercentEscaping("q=\(query)&type=turtle")
         
         self.dataReceiver = LDDataReceiver(connection: connection, getTurtleHandler: { turtle in
             self.nextResult = turtle
@@ -89,19 +104,21 @@ class SearchResultTableViewController: UITableViewController {
     
     // MARK: - Table view data source
     
-//    override func numberOfSectionsInTableView(tableView: UITableView) -> Int {
-//        // #warning Potentially incomplete method implementation.
-//        // Return the number of sections.
-//        // return 0
-//        return 1
-//    }
-    
     override func tableView(tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
+        if self.result.resultItemsCount == 0 {
+            return 1
+        }
         return self.result.resultItemsCount
     }
     
     override func tableView(tableView: UITableView, cellForRowAtIndexPath indexPath: NSIndexPath) -> UITableViewCell {
+        
         let cell = tableView.dequeueReusableCellWithIdentifier("SearchResultItemCell", forIndexPath: indexPath) as SRTableViewCell
+        
+        if self.result.resultItemsCount == 0 {
+            cell.firstTextLabel.text = NSLocalizedString("No results were found.", comment: "SRTableVC")
+            return cell
+        }
         
         var result = self.result.resultItems[indexPath.row]
         var str = ""
@@ -117,6 +134,11 @@ class SearchResultTableViewController: UITableViewController {
     }
     
     override func tableView(tableView: UITableView, didSelectRowAtIndexPath indexPath: NSIndexPath) {
+        
+        if self.result.resultItemsCount == 0 {
+            return
+        }
+        
         var bindings = self.result.resultItems[indexPath.row].bindings
         var object = bindings[bindings.count - 1]  // FIXME: かなりテキトー
             
@@ -128,7 +150,11 @@ class SearchResultTableViewController: UITableViewController {
         if urlcount == 1 {
             self.cellHasUriDidTouchUpInside(bindings[0].value)
         } else {
-            var alertController = UIAlertController(title: "Which do you choose?", message: "", preferredStyle: UIAlertControllerStyle.ActionSheet)
+            
+            var alertController = UIAlertController(
+                title: NSLocalizedString("Which do you choose?", comment: "SRTableVCで選択された際"),
+                message: "",
+                preferredStyle: UIAlertControllerStyle.ActionSheet)
             
             for binding in bindings {
                 if binding.isUri() {
@@ -138,10 +164,13 @@ class SearchResultTableViewController: UITableViewController {
                 }
             }
             
-            alertController.addAction(UIAlertAction(title: "Cancel", style: UIAlertActionStyle.Cancel, handler: { action in
-                
-                // 選択解除
-                self.tableView.deselectRowAtIndexPath(indexPath, animated: true)
+            alertController.addAction(UIAlertAction(
+                title: NSLocalizedString("Cancel", comment: "Cancel in UIAlertAction"),
+                style: UIAlertActionStyle.Cancel,
+                handler: { action in
+                    
+                    // 選択解除
+                    self.tableView.deselectRowAtIndexPath(indexPath, animated: true)
             }))
             self.presentViewController(alertController, animated: true, completion: nil)
         }
@@ -188,7 +217,7 @@ class SearchResultTableViewController: UITableViewController {
     // In a storyboard-based application, you will often want to do a little preparation before navigation
     override func prepareForSegue(segue: UIStoryboardSegue, sender: AnyObject?) {
         if segue.identifier == "ShowDetail" {
-            var lbTableVC = segue.destinationViewController as LBTableViewController
+            var lbTableVC = segue.destinationViewController as ResourceDetailTableViewController
             lbTableVC.result = self.nextResult
         }
     }

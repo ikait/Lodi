@@ -63,7 +63,7 @@ class Turtle: SearchResultFile {
             //            cs.removeCharactersInString(" ")
             var parts: NSArray = string.componentsSeparatedByCharactersInSet(cs)
             
-            var s, p, o: TurtleTriplePart?
+            var s, p, o: TurtleTripleTerm?
             
             if !(parts[0] as String).hasPrefix("@prefix") {
                 println("hmm... it may not be Turtle.")
@@ -102,15 +102,15 @@ class Turtle: SearchResultFile {
                 }
                 
                 if s == nil {
-                    s = TurtleTriplePart(value: str)
+                    s = TurtleTripleTerm(value: str)
                     continue
                 }
                 if p == nil {
-                    p = TurtleTriplePart(value: str)
+                    p = TurtleTripleTerm(value: str)
                     continue
                 }
                 if o == nil {
-                    o = TurtleTriplePart(value: str)
+                    o = TurtleTripleTerm(value: str)
                     
                     if s!.value == "@prefix" {
                         self.prefixes.append(TurtleTriple(s: s!, p: p!, o: o!, prefix: true))
@@ -132,7 +132,7 @@ class Turtle: SearchResultFile {
             }
             //            self.orderByObject()
             //            self.orderByPredicate(["label", "abstract", "comment", "type", "class"])
-            // appDelegate.addResourceFromTurtle(self.triples)
+            appDelegate.addResourceFromTurtleTriples(self.triples)
             println("Turtle parsing ended.")
             return true
         }
@@ -145,6 +145,15 @@ class Turtle: SearchResultFile {
         }
     }
     
+    func getTriple(#predicate: String) -> TurtleTriple? {
+        for triple in self.triples {
+            if triple.p.valuePrefixConnected == predicate {
+                return triple
+            }
+        }
+        return nil
+    }
+    
     var description: String {
         var result = ""
         for triple in self.triples {
@@ -155,12 +164,12 @@ class Turtle: SearchResultFile {
 }
 
 class TurtleTriple {
-    var s: TurtleTriplePart;
-    var p: TurtleTriplePart;
-    var o: TurtleTriplePart;
+    var s: TurtleTripleTerm;
+    var p: TurtleTripleTerm;
+    var o: TurtleTripleTerm;
     var prefix: Bool;
     
-    init(s: TurtleTriplePart, p: TurtleTriplePart, o: TurtleTriplePart, prefix: Bool? = nil) {
+    init(s: TurtleTripleTerm, p: TurtleTripleTerm, o: TurtleTripleTerm, prefix: Bool? = nil) {
         self.s = s
         self.p = p
         self.o = o
@@ -176,7 +185,7 @@ class TurtleTriple {
     }
 }
 
-class TurtleTriplePart {
+class TurtleTripleTerm {
     var type: TurtleTritlePartType
     var value: String
     var prefix: TurtleTriple?
@@ -215,6 +224,19 @@ class TurtleTriplePart {
     
     var shortValue: String? {
         if self.isLiteral() {
+            if self.value.hasPrefix("\"") {  // case like: "xxxx"@ja
+                if self.value.hasSuffix("\"") {
+                    return self.value.substringWithRange(Range<String.Index>(
+                        start: advance(self.value.startIndex, 1),
+                        end: advance(self.value.endIndex, -1)))
+                } else if self.value.substringWithRange(Range<String.Index>(
+                start: advance(self.value.startIndex, 0),
+                    end: advance(self.value.endIndex, -2))).hasSuffix("\"@") {
+                        return self.value.substringWithRange(Range<String.Index>(
+                            start: advance(self.value.startIndex, 1),
+                            end: advance(self.value.endIndex, -4)))
+                }
+            }
             return self.value
         }
         if self.isPrefixValue() {
@@ -246,6 +268,15 @@ class TurtleTriplePart {
             return "<" + prefix.o.valueWithoutChevrons + self.shortValue! + ">"
         }
         return self.value
+    }
+    
+    class func removeChevrons(var iri: String) -> String {
+        if iri.hasPrefix("<") && iri.hasSuffix(">") {
+            iri = iri.substringWithRange(Range<String.Index>(
+                start: advance(iri.startIndex, 1),
+                end: advance(iri.endIndex, -1)))
+        }
+        return iri
     }
     
     var description: String {

@@ -75,14 +75,58 @@ class SCLimitTableViewCell: UITableViewCell {
         numbarToolbar.barStyle = UIBarStyle.Default
         numbarToolbar.items = [
             UIBarButtonItem(barButtonSystemItem: UIBarButtonSystemItem.FlexibleSpace, target: nil, action: nil),
-            UIBarButtonItem(title: "Done", style: UIBarButtonItemStyle.Bordered, target: self, action: "done")
+            UIBarButtonItem(
+                title: NSLocalizedString("Done", comment: ""),
+                style: UIBarButtonItemStyle.Bordered,
+                target: self,
+                action: "done")
         ]
         numbarToolbar.sizeToFit()
-        self.limitTextField.inputAccessoryView = numbarToolbar
+        
+        if let limitTextField = self.limitTextField {
+            limitTextField.inputAccessoryView = numbarToolbar
+        }
     }
     
     func done() {
         self.limitTextField.resignFirstResponder()
+    }
+    
+    override func setSelected(selected: Bool, animated: Bool) {
+        super.setSelected(selected, animated: animated)
+        
+        // Configure the view for the selected state
+    }
+    
+}
+
+class SCTitleTableViewCell: UITableViewCell {
+    
+    @IBOutlet weak var titleTextField: UITextField!
+    
+    override func awakeFromNib() {
+        super.awakeFromNib()
+        // Initialization code
+        
+        var numbarToolbar = UIToolbar()
+        numbarToolbar.barStyle = UIBarStyle.Default
+        numbarToolbar.items = [
+            UIBarButtonItem(barButtonSystemItem: UIBarButtonSystemItem.FlexibleSpace, target: nil, action: nil),
+            UIBarButtonItem(
+                title: NSLocalizedString("Done", comment: ""),
+                style: UIBarButtonItemStyle.Bordered,
+                target: self,
+                action: "done")
+        ]
+        numbarToolbar.sizeToFit()
+        
+        if let titleTextField = self.titleTextField {
+            titleTextField.inputAccessoryView = numbarToolbar
+        }
+    }
+    
+    func done() {
+        self.titleTextField.resignFirstResponder()
     }
     
     override func setSelected(selected: Bool, animated: Bool) {

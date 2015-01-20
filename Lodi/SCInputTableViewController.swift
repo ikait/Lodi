@@ -12,8 +12,12 @@ class SCInputTableViewController: UITableViewController {
     
     var condition: SearchCondition!
     var conditionController: SearchConditionController!
+    var resultController: SearchResultController!
+    var finished = false
     
+    var connection: LDURLConnection!
     var editingElement: SearchConditionElement?
+    var editingLabel: String!
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -28,6 +32,10 @@ class SCInputTableViewController: UITableViewController {
         
         self.tableView.rowHeight = 44
         
+        // to fix issue tabbar covers tableview
+        // * there is no self.tabbarController when it presents modally
+        self.edgesForExtendedLayout = UIRectEdge.All
+        self.tableView.contentInset.bottom = 49  // XXX
     }
     
     override func viewWillAppear(animated: Bool) {
@@ -51,6 +59,36 @@ class SCInputTableViewController: UITableViewController {
     
     // MARK: - Events
     
+    func ready() {
+        self.finish()
+        self.finished = false
+    }
+    
+    func finish() {
+        if let connection = self.connection {
+            connection.cancel()
+        }
+        self.finished = true
+    }
+    
+    func validConditionCellDidTouchUpInside(scc: SearchConditionController) {
+        self.ready()
+        
+        var query = scc.getQueryString() as String
+        connection = LDURLConnection(url: conditionController.getEndpointUri()!, completionHandler: { data in
+            
+            self.resultController = SearchResultController(jsonData: data)
+            if self.resultController.parseJson() && !self.finished {
+                self.performSegueWithIdentifier("EditKeywordExample", sender: self)
+            }
+            
+            return nil
+        })
+        self.connection.setRequestMethod("POST")
+        self.connection.setRequestBodyWithPercentEscaping("q=\(query)&type=json")
+        self.connection.start()
+    }
+    
     func variableSwitchDidChange(variableSwitch: UISwitch) {
         switch variableSwitch.tag {
         case 0:
@@ -70,11 +108,27 @@ class SCInputTableViewController: UITableViewController {
     func showSwitchDidChange(showSwitch: UISwitch) {
         switch showSwitch.tag {
         case 0:
-            condition?.subject.show = showSwitch.on
+            self.conditionController.setVariableShown(condition.subject.variableLabel, show: showSwitch.on)
+//            condition?.subject.show = showSwitch.on
         case 1:
-            condition?.predicate.show = showSwitch.on
+            self.conditionController.setVariableShown(condition.predicate.variableLabel, show: showSwitch.on)
+//            condition?.predicate.show = showSwitch.on
         case 2:
-            condition?.object.show = showSwitch.on
+            self.conditionController.setVariableShown(condition.object.variableLabel, show: showSwitch.on)
+//            condition?.object.show = showSwitch.on
+        default:
+            break
+        }
+    }
+    
+    func inputFilterTextFieldDidEditingChanged(textField: UITextField) {
+        switch textField.tag {
+        case 0:
+            self.conditionController.setVariableFilterString(condition.subject.variableLabel, filterString: textField.text.stringByTrimmingCharactersInSet(NSCharacterSet.whitespaceAndNewlineCharacterSet()))
+        case 1:
+            self.conditionController.setVariableFilterString(condition.predicate.variableLabel, filterString: textField.text.stringByTrimmingCharactersInSet(NSCharacterSet.whitespaceAndNewlineCharacterSet()))
+        case 2:
+            self.conditionController.setVariableFilterString(condition.object.variableLabel, filterString: textField.text.stringByTrimmingCharactersInSet(NSCharacterSet.whitespaceAndNewlineCharacterSet()))
         default:
             break
         }
@@ -104,7 +158,7 @@ class SCInputTableViewController: UITableViewController {
         
         switch element.variable {
         case true:
-            return 3
+            return 4
         case false:
             return 2
         default:
@@ -163,6 +217,16 @@ class SCInputTableViewController: UITableViewController {
                     forControlEvents: UIControlEvents.ValueChanged)
                 return cell
             }
+        case 3:
+            if element.variable {
+                reuseIdentifier = "FilterCell"
+                let cell = tableView.dequeueReusableCellWithIdentifier(reuseIdentifier, forIndexPath: indexPath) as SCInputFilterTableViewCell
+                cell.inputFilterTextField.text = element.filterString
+                cell.inputFilterTextField.tag = indexPath.section
+                cell.inputFilterTextField.addTarget(self,
+                    action: "inputFilterTextFieldDidEditingChanged:", forControlEvents: UIControlEvents.EditingChanged)
+                return cell
+            }
         default:
             break
         }
@@ -179,11 +243,29 @@ class SCInputTableViewController: UITableViewController {
         var title = ""
         switch section {
         case 0:
-            title = "Subject"
+            title = NSLocalizedString("Subject", comment: "section title in SCInputTableVC")
         case 1:
-            title = "Predicate"
+            title = NSLocalizedString("Predicate", comment: "section title in SCInputTableVC")
         case 2:
-            title = "Object"
+            title = NSLocalizedString("Object", comment: "section title in SCInputTableVC")
+        default:
+            break
+        }
+        return title
+    }
+    
+    override func tableView(tableView: UITableView, titleForFooterInSection section: Int) -> String? {
+        var title = ""
+        switch section {
+        case 0:
+            var (valid, comment) = self.condition.subject.isValid()
+            title = valid ? "" : comment
+        case 1:
+            var (valid, comment) = self.condition.predicate.isValid()
+            title = valid ? "" : comment
+        case 2:
+            var (valid, comment) = self.condition.object.isValid()
+            title = valid ? "" : comment
         default:
             break
         }
@@ -210,13 +292,113 @@ class SCInputTableViewController: UITableViewController {
             if self.editingElement!.variable {
                 self.performSegueWithIdentifier("EditLabel", sender: self)
             } else {
-                self.performSegueWithIdentifier("EditKeyword", sender: self)
+                self.editingLabel = "xxxx"
+                
+                if self.conditionController.isEmpty() {
+                    self.performSegueWithIdentifier("EditKeyword", sender: self)
+                    break
+                }
+                
+                switch indexPath.section {
+                case 0: // when subject
+                    
+                    if !(self.condition.predicate.variable && self.condition.object.variable) &&
+                    !(self.condition.predicate.isEmpty() && self.condition.object.isEmpty()) {
+                        
+                        var predicate = (self.condition.predicate.isValid().valid) ?
+                            self.condition.predicate :
+                            SearchConditionElement(show: true, value: "",
+                                variable: true, variableLabel: "yyyy", filterString: "")
+                        var object = (self.condition.object.isValid().valid) ?
+                            self.condition.object :
+                            SearchConditionElement(show: true, value: "",
+                                variable: true, variableLabel: "zzzz", filterString: "")
+
+                        self.validConditionCellDidTouchUpInside(
+                            SearchConditionController(title: "",
+                                conditions: [
+                                    SearchCondition(
+                                        subject: SearchConditionElement(show: true,
+                                            value: "",
+                                            variable: true,
+                                            variableLabel: self.editingLabel,
+                                            filterString: ""),
+                                        predicate: predicate,
+                                        object: object)]))
+                    } else {
+                        // show items already cached
+                        self.performSegueWithIdentifier("EditKeyword", sender: self)
+                    }
+                case 1:
+                    if !(self.condition.subject.variable && self.condition.object.variable) &&
+                        !(self.condition.subject.isEmpty() && self.condition.object.isEmpty()) {
+                        
+                        var subject = (self.condition.subject.isValid().valid) ?
+                            self.condition.subject :
+                            SearchConditionElement(show: true, value: "",
+                                variable: true, variableLabel: "yyyy", filterString: "")
+                        var object = (self.condition.object.isValid().valid) ?
+                            self.condition.object :
+                            SearchConditionElement(show: true, value: "",
+                                variable: true, variableLabel: "zzzz", filterString: "")
+                        
+                        self.validConditionCellDidTouchUpInside(
+                            SearchConditionController(title: "",
+                                conditions: [
+                                    SearchCondition(
+                                        subject: subject,
+                                        predicate: SearchConditionElement(show: true,
+                                            value: "",
+                                            variable: true,
+                                            variableLabel: self.editingLabel,
+                                            filterString: ""),
+                                        object: object)]))
+                    } else {
+                        // show items already cached
+                        self.performSegueWithIdentifier("EditKeyword", sender: self)
+                    }
+                case 2:
+                    if !(self.condition.subject.variable && self.condition.predicate.variable) &&
+                        !(self.condition.subject.isEmpty() && self.condition.predicate.isEmpty()) {
+                        
+                        var subject = (self.condition.subject.isValid().valid) ?
+                            self.condition.subject :
+                            SearchConditionElement(show: true, value: "",
+                                variable: true, variableLabel: "yyyy", filterString: "")
+                        var predicate = (self.condition.predicate.isValid().valid) ?
+                            self.condition.predicate :
+                            SearchConditionElement(show: true, value: "",
+                                variable: true, variableLabel: "zzzz", filterString: "")
+                        
+                        self.validConditionCellDidTouchUpInside(
+                            SearchConditionController(title: "",
+                                conditions: [
+                                    SearchCondition(
+                                        subject: subject,
+                                        predicate: predicate,
+                                        object: SearchConditionElement(show: true,
+                                            value: "",
+                                            variable: true,
+                                            variableLabel: self.editingLabel,
+                                            filterString: ""))]))
+                    } else {
+                        // show items already cached
+                        self.performSegueWithIdentifier("EditKeyword", sender: self)
+                    }
+                default:
+                    break
+                }
+                
+                
             }
         default:
             break
         }
     }
 
+    // MARK: - Connection
+    
+    
     /*
     // Override to support conditional editing of the table view.
     override func tableView(tableView: UITableView, canEditRowAtIndexPath indexPath: NSIndexPath) -> Bool {
@@ -265,6 +447,12 @@ class SCInputTableViewController: UITableViewController {
         } else if segue.identifier == "EditKeyword" {
             var keywordCandidateTableVC = segue.destinationViewController as SCKeywordCandidateTableViewController
             keywordCandidateTableVC.editingElement = self.editingElement
+            keywordCandidateTableVC.conditionController = self.conditionController
+        } else if segue.identifier == "EditKeywordExample" {
+            var keywordExamplesTableVC = segue.destinationViewController as KeywordExamplesTableViewController
+            keywordExamplesTableVC.resultController = self.resultController
+            keywordExamplesTableVC.editingElement = self.editingElement
+            keywordExamplesTableVC.editingLabel = self.editingLabel
         }
         
         // FIXME: - via switch don't run well..??

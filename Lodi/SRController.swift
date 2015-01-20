@@ -11,12 +11,40 @@ import Foundation
 class SearchResultController {
     var resultItems: [SearchResultItem] = []
     let xmlData: NSData?
+    let jsonData: NSData!
     
     init(xmlData: NSData) {
         self.xmlData = xmlData
-//        self.parse()
+    }
+    
+    init(jsonData: NSData) {
+        self.jsonData = jsonData
+    }
+    
+    func parseJson(interrepter: (() -> Bool)? = nil) -> Bool {
+        var resultItems = []
+
+        let json = JSON(data: self.jsonData)
         
-//        self.sort()
+        self.resultItems = []
+        for (index: String, subJson1: JSON) in json["results"]["bindings"] {
+            if let abort = interrepter {
+                if abort() {
+                    return false
+                }
+            }
+            
+            var bindings: [SearchResultItemBinding] = []
+            for (name: String, subJson2: JSON) in subJson1 {
+                let value = subJson2["value"].string!
+                let type = subJson2["type"].string!
+                
+                let child = SearchResultItemBinding(name: name, typeWithString: type, value: value)
+                bindings.insert(child, atIndex: 0)
+            }
+            self.resultItems.append(SearchResultItem(bindings: bindings))
+        }
+        return true
     }
     
     func parse() -> Bool {
@@ -83,9 +111,14 @@ class SearchResultItem: NSObject {
     init(bindings: [SearchResultItemBinding]) {
         self.bindings = bindings
     }
-    
-    var children: [SearchResultItemBinding] {
-        return self.bindings
+
+    func getBinding(variable: String) -> SearchResultItemBinding? {
+        for binding in self.bindings {
+            if binding.name == variable {
+                return binding
+            }
+        }
+        return nil
     }
     
     var count: Int {

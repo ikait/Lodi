@@ -1,25 +1,21 @@
 //
-//  SCSelectTableViewController.swift
+//  VariableOrderTableViewController.swift
 //  Lodi
 //
-//  Created by Taishi Ikai on 2014/11/18.
-//  Copyright (c) 2014年 Taishi Ikai. All rights reserved.
+//  Created by Taishi Ikai on 2015/01/15.
+//  Copyright (c) 2015年 Taishi Ikai. All rights reserved.
 //
 
 import UIKit
 
-class SCKeywordCandidateTableViewController: UITableViewController {
+class VariableOrderTableViewController: UITableViewController {
     
-    
-    // MARK: - Variables
-    
-    var editingElement: SearchConditionElement!
     var conditionController: SearchConditionController!
     
-    var appDelegate = UIApplication.sharedApplication().delegate as AppDelegate
+    var dic: [String: SearchConditionVariableOrder] = [:]
+    var keysArray: [String] = []
     
-    
-    // MARK: - Base
+    var editingVariableLabel = ""
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -29,13 +25,17 @@ class SCKeywordCandidateTableViewController: UITableViewController {
 
         // Uncomment the following line to display an Edit button in the navigation bar for this view controller.
         // self.navigationItem.rightBarButtonItem = self.editButtonItem()
-        
-        self.tableView.rowHeight = 44
-        
-        // to fix issue tabbar covers tableview
-        // * there is no self.tabbarController when it presents modally
-        self.edgesForExtendedLayout = UIRectEdge.All
-        self.tableView.contentInset.bottom = 49  // XXX
+
+    }
+    
+    func set() {
+        self.dic = self.conditionController.getVariableLabelsAndOrders()
+        self.keysArray = dic.keys.array
+    }
+    
+    override func viewWillAppear(animated: Bool) {
+        self.set()
+        self.tableView.reloadData()
     }
 
     override func didReceiveMemoryWarning() {
@@ -44,75 +44,58 @@ class SCKeywordCandidateTableViewController: UITableViewController {
     }
 
     // MARK: - Table view data source
+    
+    override func tableView(tableView: UITableView, titleForHeaderInSection section: Int) -> String? {
+        switch section {
+        case 0:
+            return NSLocalizedString("Variables", comment: "in SettingVariableOrderTVC")
+        default:
+            return ""
+        }
+    }
+    
+    override func tableView(tableView: UITableView, titleForFooterInSection section: Int) -> String? {
+        switch section {
+        case 0:
+            return NSLocalizedString("", comment: "in SettingVariableOrderTVC")
+        default:
+            return ""
+        }
+    }
 
     override func numberOfSectionsInTableView(tableView: UITableView) -> Int {
-        return 2
+        return 1
     }
 
     override func tableView(tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        switch section {
-        case 0:
-            return 1
-        case 1:
-            return appDelegate.resources.count
-        default:
-            break
-        }
-        return 0
+        return self.conditionController.getVariableLabelsAndOrders().count
     }
 
     override func tableView(tableView: UITableView, cellForRowAtIndexPath indexPath: NSIndexPath) -> UITableViewCell {
-        var reuseIdentifier = "Cell"
-        
-        switch indexPath.section {
-        case 0:
-            switch indexPath.row {
-            case 0:
-                let cell = tableView.dequeueReusableCellWithIdentifier(reuseIdentifier, forIndexPath: indexPath) as UITableViewCell
-                cell.textLabel?.text = NSLocalizedString("Manual input...", comment: "A label text in SCKeywordCandidateVC")
-                return cell
-            default:
-                break
-            }
-            
-        case 1:
-            reuseIdentifier = "ResourceCell"
-            let cell = tableView.dequeueReusableCellWithIdentifier(reuseIdentifier, forIndexPath: indexPath) as UITableViewCell
-            cell.textLabel?.text = self.appDelegate.getResource(indexPath.row).shortValue
-            return cell
-        default:
-            break
-        }
+        var reuseIdentifier = "VariableCell"
         
         let cell = tableView.dequeueReusableCellWithIdentifier(reuseIdentifier, forIndexPath: indexPath) as UITableViewCell
+        
+        cell.textLabel?.text = "?" + self.keysArray[indexPath.row]  // MARK: need a prefix?
+        cell.detailTextLabel?.text = self.dic[keysArray[indexPath.row]]?.toString()
 
         // Configure the cell...
+    
 
         return cell
     }
-    
+
     override func tableView(tableView: UITableView, didSelectRowAtIndexPath indexPath: NSIndexPath) {
-        
         switch indexPath.section {
         case 0:
-            switch indexPath.row {
-            case 0:
-                self.performSegueWithIdentifier("InputKeywordManually", sender: self)
-                break
-            default:
-                break
-            }
-            
-        case 1:
-            self.editingElement.value = self.appDelegate.getResource(indexPath.row).getValueForRdf()
-            self.performSegueWithIdentifier("BackToSCInputTableView", sender: self)
+            self.editingVariableLabel = self.keysArray[indexPath.row]
+            self.performSegueWithIdentifier("SettingOrder", sender: self)
             break
         default:
             break
         }
-        
     }
-
+    
     /*
     // Override to support conditional editing of the table view.
     override func tableView(tableView: UITableView, canEditRowAtIndexPath indexPath: NSIndexPath) -> Bool {
@@ -153,13 +136,13 @@ class SCKeywordCandidateTableViewController: UITableViewController {
 
     // In a storyboard-based application, you will often want to do a little preparation before navigation
     override func prepareForSegue(segue: UIStoryboardSegue, sender: AnyObject?) {
-        switch segue.identifier! {
-        case "InputKeywordManually":
-            var keywordInputManuallyVC = segue.destinationViewController as SCKeywordInputManuallyTableViewController
-                keywordInputManuallyVC.editingElement = self.editingElement
-            break
-        default:
-            break
+        // Get the new view controller using [segue destinationViewController].
+        // Pass the selected object to the new view controller.
+        
+        if segue.identifier == "SettingOrder" {
+            var vocTVC = segue.destinationViewController as VariableOrderChoiceTableViewController
+            vocTVC.conditionController = self.conditionController
+            vocTVC.editingVariableLabel = self.editingVariableLabel
         }
     }
     

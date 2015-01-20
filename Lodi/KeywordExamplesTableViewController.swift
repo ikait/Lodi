@@ -1,36 +1,27 @@
 //
-//  SCSelectTableViewController.swift
+//  KeywordExamplesTableViewController.swift
 //  Lodi
 //
-//  Created by Taishi Ikai on 2014/11/18.
-//  Copyright (c) 2014年 Taishi Ikai. All rights reserved.
+//  Created by Taishi Ikai on 2015/01/17.
+//  Copyright (c) 2015年 Taishi Ikai. All rights reserved.
 //
 
 import UIKit
 
-class SCKeywordCandidateTableViewController: UITableViewController {
+class KeywordExamplesTableViewController: UITableViewController {
     
-    
-    // MARK: - Variables
-    
+    var resultController: SearchResultController!
     var editingElement: SearchConditionElement!
-    var conditionController: SearchConditionController!
-    
-    var appDelegate = UIApplication.sharedApplication().delegate as AppDelegate
-    
-    
-    // MARK: - Base
+    var editingLabel: String!
 
     override func viewDidLoad() {
         super.viewDidLoad()
 
-        // Uncomment the following line to preserve selection between presentations
-        // self.clearsSelectionOnViewWillAppear = false
-
-        // Uncomment the following line to display an Edit button in the navigation bar for this view controller.
-        // self.navigationItem.rightBarButtonItem = self.editButtonItem()
+        self.clearsSelectionOnViewWillAppear = true
         
-        self.tableView.rowHeight = 44
+        self.tableView.reloadData()
+        self.tableView.estimatedRowHeight = 44
+        self.tableView.rowHeight = UITableViewAutomaticDimension
         
         // to fix issue tabbar covers tableview
         // * there is no self.tabbarController when it presents modally
@@ -44,7 +35,7 @@ class SCKeywordCandidateTableViewController: UITableViewController {
     }
 
     // MARK: - Table view data source
-
+    
     override func numberOfSectionsInTableView(tableView: UITableView) -> Int {
         return 2
     }
@@ -54,40 +45,35 @@ class SCKeywordCandidateTableViewController: UITableViewController {
         case 0:
             return 1
         case 1:
-            return appDelegate.resources.count
+            return self.resultController.resultItemsCount
         default:
-            break
+            return 0
         }
-        return 0
     }
 
     override func tableView(tableView: UITableView, cellForRowAtIndexPath indexPath: NSIndexPath) -> UITableViewCell {
-        var reuseIdentifier = "Cell"
+        
+        let cell = tableView.dequeueReusableCellWithIdentifier("Cell", forIndexPath: indexPath) as UITableViewCell
         
         switch indexPath.section {
         case 0:
-            switch indexPath.row {
-            case 0:
-                let cell = tableView.dequeueReusableCellWithIdentifier(reuseIdentifier, forIndexPath: indexPath) as UITableViewCell
-                cell.textLabel?.text = NSLocalizedString("Manual input...", comment: "A label text in SCKeywordCandidateVC")
-                return cell
-            default:
-                break
-            }
-            
+            cell.textLabel?.textColor = UIColor.redColor()
+            cell.textLabel?.text = NSLocalizedString("Delete a keyword", comment: "on KeywordExamplesTVC")
+            cell.detailTextLabel?.text = ""
         case 1:
-            reuseIdentifier = "ResourceCell"
-            let cell = tableView.dequeueReusableCellWithIdentifier(reuseIdentifier, forIndexPath: indexPath) as UITableViewCell
-            cell.textLabel?.text = self.appDelegate.getResource(indexPath.row).shortValue
-            return cell
+            cell.textLabel?.textColor = UIColor.darkTextColor()
+            var result = self.resultController.resultItems[indexPath.row]
+            for (index, binding) in enumerate(result.bindings) {
+                if binding.name == self.editingLabel {
+                    cell.textLabel?.text = binding.shortValue
+                } else {
+                    cell.detailTextLabel?.text = binding.shortValue
+                }
+            }
         default:
             break
         }
         
-        let cell = tableView.dequeueReusableCellWithIdentifier(reuseIdentifier, forIndexPath: indexPath) as UITableViewCell
-
-        // Configure the cell...
-
         return cell
     }
     
@@ -95,23 +81,30 @@ class SCKeywordCandidateTableViewController: UITableViewController {
         
         switch indexPath.section {
         case 0:
-            switch indexPath.row {
-            case 0:
-                self.performSegueWithIdentifier("InputKeywordManually", sender: self)
-                break
-            default:
-                break
-            }
-            
+            self.editingElement.value = ""
+            self.navigationController?.popViewControllerAnimated(true)
         case 1:
-            self.editingElement.value = self.appDelegate.getResource(indexPath.row).getValueForRdf()
-            self.performSegueWithIdentifier("BackToSCInputTableView", sender: self)
-            break
+            var result = self.resultController.resultItems[indexPath.row]
+            for (index, binding) in enumerate(result.bindings) {
+                if binding.name == self.editingLabel {
+                    if binding.type == SearchResultItemType.URI {
+                        self.editingElement.value = "<\(binding.value)>"
+                    } else {
+                        self.editingElement.value = "\"\(binding.value)\""
+                    }
+                }
+            }
+            self.navigationController?.popViewControllerAnimated(true)
+
+            // check!
+            self.tableView.cellForRowAtIndexPath(indexPath)?.accessoryType = UITableViewCellAccessoryType.Checkmark
         default:
             break
         }
         
+        
     }
+    
 
     /*
     // Override to support conditional editing of the table view.
@@ -148,20 +141,14 @@ class SCKeywordCandidateTableViewController: UITableViewController {
     }
     */
 
-    
+    /*
     // MARK: - Navigation
 
     // In a storyboard-based application, you will often want to do a little preparation before navigation
     override func prepareForSegue(segue: UIStoryboardSegue, sender: AnyObject?) {
-        switch segue.identifier! {
-        case "InputKeywordManually":
-            var keywordInputManuallyVC = segue.destinationViewController as SCKeywordInputManuallyTableViewController
-                keywordInputManuallyVC.editingElement = self.editingElement
-            break
-        default:
-            break
-        }
+        // Get the new view controller using [segue destinationViewController].
+        // Pass the selected object to the new view controller.
     }
-    
+    */
 
 }

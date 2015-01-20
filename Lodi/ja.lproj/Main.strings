@@ -1,0 +1,171 @@
+/* Class = "IBUITextField"; placeholder = "Tap to input"; ObjectID = "3dB-3b-pTA"; */
+"3dB-3b-pTA.placeholder" = "タップして入力";
+
+/* Class = "IBUINavigationItem"; title = "Title"; ObjectID = "4Eb-qM-qaz"; */
+"4Eb-qM-qaz.title" = "タイトル";
+
+/* Class = "IBUINavigationItem"; title = "Bookmarks"; ObjectID = "4w9-WH-mda"; */
+"4w9-WH-mda.title" = "ブックマーク";
+
+/* Class = "IBUILabel"; text = "Label"; ObjectID = "5Vj-fP-I4G"; */
+"5Vj-fP-I4G.text" = "ラベル";
+
+/* Class = "IBUILabel"; text = "Title"; ObjectID = "5np-86-XUR"; */
+"5np-86-XUR.text" = "タイトル";
+
+/* Class = "IBUILabel"; text = "Label"; ObjectID = "6PJ-Ou-eq1"; */
+"6PJ-Ou-eq1.text" = "ラベル";
+
+/* Class = "IBUILabel"; text = "Object"; ObjectID = "8GJ-HQ-Lxy"; */
+"8GJ-HQ-Lxy.text" = "目的語";
+
+/* Class = "IBUILabel"; text = "Title"; ObjectID = "9QF-Pd-I4g"; */
+"9QF-Pd-I4g.text" = "タイトル";
+
+/* Class = "IBUITextView"; text = "CONSTRUCT\n{\n  <http://www.wikipediaontology.org/instance/芥川龍之介> ?prop ?value\n}\nWHERE\n{\n  <http://www.wikipediaontology.org/instance/芥川龍之介> ?prop ?value\n}\n"; ObjectID = "9m4-jx-E32"; */
+"9m4-jx-E32.text" = "CONSTRUCT\n{\n  <http://www.wikipediaontology.org/instance/芥川龍之介> ?prop ?value\n}\nWHERE\n{\n  <http://www.wikipediaontology.org/instance/芥川龍之介> ?prop ?value\n}\n";
+
+/* Class = "IBUILabel"; text = "Title"; ObjectID = "Dj1-rV-InJ"; */
+"Dj1-rV-InJ.text" = "タイトル";
+
+/* Class = "IBUILabel"; text = "Show in Result"; ObjectID = "DyI-uq-8qX"; */
+"DyI-uq-8qX.text" = "結果に表示させる";
+
+/* Class = "IBUILabel"; text = "Predicate"; ObjectID = "Eet-CJ-19b"; */
+"Eet-CJ-19b.text" = "述語";
+
+/* Class = "IBUILabel"; text = "Label"; ObjectID = "H0s-Hj-FSa"; */
+"H0s-Hj-FSa.text" = "ラベル";
+
+/* Class = "IBUITextField"; placeholder = "Input here"; ObjectID = "H7C-lh-gJI"; */
+"H7C-lh-gJI.placeholder" = "ここに入力";
+
+/* Class = "IBUILabel"; text = "Label"; ObjectID = "Iks-0g-8SR"; */
+"Iks-0g-8SR.text" = "ラベル";
+
+/* Class = "IBUILabel"; text = "Label"; ObjectID = "Kzt-bD-M4E"; */
+"Kzt-bD-M4E.text" = "ラベル";
+
+/* Class = "IBUINavigationItem"; title = "Title"; ObjectID = "MCw-RI-y6V"; */
+"MCw-RI-y6V.title" = "タイトル";
+
+/* Class = "IBUILabel"; text = "Cancelled:"; ObjectID = "Nph-MM-B6B"; */
+"Nph-MM-B6B.text" = "キャンセル:";
+
+/* Class = "IBUILabel"; text = "Order by"; ObjectID = "OMY-5D-Xpa"; */
+"OMY-5D-Xpa.text" = "変数の値で並び替え";
+
+/* Class = "IBUILabel"; text = "Detail"; ObjectID = "OV9-Y9-8e2"; */
+"OV9-Y9-8e2.text" = "詳細";
+
+/* Class = "IBUILabel"; text = "Subtitle"; ObjectID = "QBj-CW-f0d"; */
+"QBj-CW-f0d.text" = "サブタイトル";
+
+/* Class = "IBUILabel"; text = "Title"; ObjectID = "QPx-ft-ZEj"; */
+"QPx-ft-ZEj.text" = "タイトル";
+
+/* Class = "IBUIButton"; normalTitle = "Cancel"; ObjectID = "QoL-gV-7XZ"; */
+"QoL-gV-7XZ.normalTitle" = "キャンセル";
+
+/* Class = "IBUILabel"; text = "Title"; ObjectID = "RSj-iJ-qs5"; */
+"RSj-iJ-qs5.text" = "タイトル";
+
+/* Class = "IBUITextField"; placeholder = "Tap to input or choose"; ObjectID = "S8C-tZ-Q8L"; */
+"S8C-tZ-Q8L.placeholder" = "タップして入力 / 選択";
+
+/* Class = "IBUILabel"; text = "Keyword"; ObjectID = "TBi-2A-ZiX"; */
+"TBi-2A-ZiX.text" = "キーワード";
+
+/* Class = "IBUIButton"; normalTitle = "Search"; ObjectID = "Ttb-AQ-EpZ"; */
+"Ttb-AQ-EpZ.normalTitle" = "検索";
+
+/* Class = "IBUIButton"; normalTitle = "Reset"; ObjectID = "UNC-1R-kyi"; */
+"UNC-1R-kyi.normalTitle" = "リセット";
+
+/* Class = "IBUILabel"; text = "Subject"; ObjectID = "VIe-Wn-72i"; */
+"VIe-Wn-72i.text" = "主語";
+
+/* Class = "IBUILabel"; text = "Limit"; ObjectID = "WqB-kj-NOJ"; */
+"WqB-kj-NOJ.text" = "検索結果の最大数";
+
+/* Class = "IBUILabel"; text = "Title"; ObjectID = "Xb9-LN-K58"; */
+"Xb9-LN-K58.text" = "タイトル";
+
+/* Class = "IBUILabel"; text = "Predicate"; ObjectID = "aY5-nd-pBR"; */
+"aY5-nd-pBR.text" = "述語";
+
+/* Class = "IBUITextField"; placeholder = "Tap to input"; ObjectID = "bBo-YB-Kov"; */
+"bBo-YB-Kov.placeholder" = "タップして入力";
+
+/* Class = "IBUILabel"; text = "Title"; ObjectID = "bbo-CD-hYL"; */
+"bbo-CD-hYL.text" = "Title";
+
+/* Class = "IBUIButton"; normalTitle = "Search"; ObjectID = "dQj-aq-vF9"; */
+"dQj-aq-vF9.normalTitle" = "検索";
+
+/* Class = "IBUILabel"; text = "Object"; ObjectID = "dUh-lh-ErY"; */
+"dUh-lh-ErY.text" = "目的語";
+
+/* Class = "IBUILabel"; text = "Subject"; ObjectID = "dlT-5d-hU1"; */
+"dlT-5d-hU1.text" = "主語";
+
+/* Class = "IBUITextField"; placeholder = "30"; ObjectID = "dpv-cH-vd3"; */
+"dpv-cH-vd3.placeholder" = "30";
+
+/* Class = "IBUITabBarItem"; title = "QueryTest"; ObjectID = "efa-fV-VAI"; */
+"efa-fV-VAI.title" = "QueryTest";
+
+/* Class = "IBUIButton"; normalTitle = "Add a new condition"; ObjectID = "f5C-gY-6Bx"; */
+"f5C-gY-6Bx.normalTitle" = "新しい条件を追加";
+
+/* Class = "IBUILabel"; text = "Title"; ObjectID = "ffR-gw-vlK"; */
+"ffR-gw-vlK.text" = "タイトル";
+
+/* Class = "IBUILabel"; text = "Keyword"; ObjectID = "ha9-JI-cxr"; */
+"ha9-JI-cxr.text" = "キーワード";
+
+/* Class = "IBUITabBarItem"; title = "HTTPTest"; ObjectID = "jYL-ZM-bYw"; */
+"jYL-ZM-bYw.title" = "HTTPTest";
+
+/* Class = "IBUILabel"; text = "Be a variable"; ObjectID = "jwH-7w-oA3"; */
+"jwH-7w-oA3.text" = "変数にする";
+
+/* Class = "IBUITextField"; placeholder = "Tap to input or choose"; ObjectID = "kFx-dS-b2Z"; */
+"kFx-dS-b2Z.placeholder" = "タップして入力 / 選択";
+
+/* Class = "IBUITextField"; text = "http://j.mp/1r6xNsa"; ObjectID = "kJi-q6-Ir3"; */
+"kJi-q6-Ir3.text" = "http://j.mp/1r6xNsa";
+
+/* Class = "IBUIButton"; normalTitle = "Start"; ObjectID = "lMj-UG-g7j"; */
+"lMj-UG-g7j.normalTitle" = "スタート";
+
+/* Class = "IBUILabel"; text = "Label"; ObjectID = "lRc-CF-qY6"; */
+"lRc-CF-qY6.text" = "Label";
+
+/* Class = "IBUILabel"; text = "false"; ObjectID = "lUN-XN-Mu5"; */
+"lUN-XN-Mu5.text" = "false";
+
+/* Class = "IBUITextView"; text = "Lorem ipsum dolor sit er elit lamet, consectetaur cillium adipisicing pecu, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum. Nam liber te conscient to factor tum poen legum odioque civiuda."; ObjectID = "lfV-Kx-9pm"; */
+"lfV-Kx-9pm.text" = "Lorem ipsum dolor sit er elit lamet, consectetaur cillium adipisicing pecu, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum. Nam liber te conscient to factor tum poen legum odioque civiuda.";
+
+/* Class = "IBUINavigationItem"; title = "Order by"; ObjectID = "pLl-QF-Txr"; */
+"pLl-QF-Txr.title" = "並び替え";
+
+/* Class = "IBUILabel"; text = "HTTP Operation Test"; ObjectID = "uud-la-wpv"; */
+"uud-la-wpv.text" = "HTTP Operation Test";
+
+/* Class = "IBUILabel"; text = "Detail"; ObjectID = "y6T-Ok-p2k"; */
+"y6T-Ok-p2k.text" = "詳細";
+
+/* Class = "IBUILabel"; text = "Detail"; ObjectID = "ysr-Vd-h5C"; */
+"ysr-Vd-h5C.text" = "詳細";
+
+/* Class = "IBUILabel"; text = "Filter"; ObjectID = "ytd-tp-BSP"; */
+"ytd-tp-BSP.text" = "フィルター";
+
+/* Class = "IBUINavigationItem"; title = "Search History"; ObjectID = "z9t-lT-xuv"; */
+"z9t-lT-xuv.title" = "検索";
+
+/* Class = "IBUILabel"; text = "Label"; ObjectID = "zMG-HJ-VNl"; */
+"zMG-HJ-VNl.text" = "Label";
+

@@ -51,10 +51,18 @@ UITableViewController, UISearchBarDelegate, UITextFieldDelegate {
 
         // MARK: - tableView
         self.tableView.rowHeight = 44
+        
+        
+        // to fix issue tabbar covers tableview
+        // * there is no self.tabbarController when it presents modally
+        self.edgesForExtendedLayout = UIRectEdge.All
+        self.tableView.contentInset.bottom = 49  // XXX
     }
     
     override func viewDidDisappear(animated: Bool) {
-        self.finish()
+        if let dataReceiver = self.dataReceiver {
+            dataReceiver.cancel()
+        }
     }
     
     override func viewWillAppear(animated: Bool) {
@@ -81,18 +89,6 @@ UITableViewController, UISearchBarDelegate, UITextFieldDelegate {
 
     
     // MARK: - Events
-    
-    func ready() {
-        self.finish()
-        self.finished = false
-    }
-    
-    func finish() {
-        if let connection = self.connection {
-            connection.cancel()
-        }
-        self.finished = true
-    }
     
     func inputKeywordTextFieldDidEndEditing() {
         NSLog("%@", "changed!")
@@ -126,27 +122,32 @@ UITableViewController, UISearchBarDelegate, UITextFieldDelegate {
         }
     }
     
+    func titleTextFieldEditingChanged(sender: UITextField) {
+        self.conditionController.title = sender.text
+    }
+    
     // MARK: - Connection
     
+    func readyForReceiving() {
+        self.cancelReceiving()
+    }
+    
+    func cancelReceiving() {
+        if var dataReceiver = self.dataReceiver {
+            dataReceiver.cancel()
+        }
+    }
+    
     func searchExecute() {
-        self.ready()
-        
         var query = self.conditionController.getQueryString() as String
-        
-        // TODO: これをうまくやるラッパークラスを用意したい?
-        // 現状XMLを読んでいるので、NTriplesを読みに行くことにする？？
-//        self.dataReceiver = LDDataReceiver(connection: <#LDURLConnection#>, getTurtleHandler: <#(Turtle -> ())##Turtle -> ()#>)
-        
-        self.connection = LDURLConnection(url: conditionController.getEndpointUri()!, completionHandler: { data in
-            self.resultController = SearchResultController(xmlData: data)
-            if self.resultController.parse() && !self.finished {
-                self.performSegueWithIdentifier("ShowResult", sender: self)
-            }
-            return nil
-        })
+        connection = LDURLConnection(url: conditionController.getEndpointUri()!)
         self.connection.setRequestMethod("POST")
-        self.connection.setRequestBodyWithPercentEscaping("query=\(query)")
-        self.connection.start()
+        self.connection.setRequestBodyWithPercentEscaping("q=\(query)&type=json&limit=\(self.conditionController.limit)")
+        
+        self.dataReceiver = LDDataReceiver(connection: self.connection, getJsonHandler: { resultController in
+            self.resultController = resultController
+            self.performSegueWithIdentifier("ShowResult", sender: self)
+        }).start()
     }
     
     
@@ -154,20 +155,20 @@ UITableViewController, UISearchBarDelegate, UITextFieldDelegate {
 
     override func numberOfSectionsInTableView(tableView: UITableView) -> Int {
         // Return the number of sections.
-        return 4
+        return SectionNumber.count
     }
 
     override func tableView(tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         // Return the number of rows in the section.
         
         switch section {
-        case 0:
+        case SectionNumber.SearchExecute.rawValue:
             return 1  // search execute
-        case 1:
+        case SectionNumber.ConditionList.rawValue:
             return self.conditionController.countContidions() + 1  // for a cell to add a new condition
-        case 2:
-            return 1
-        case 3:
+        case SectionNumber.Options.rawValue:
+            return 2
+        case SectionNumber.Preferences.rawValue:
             return 1
         default:
             return 0
@@ -178,14 +179,14 @@ UITableViewController, UISearchBarDelegate, UITextFieldDelegate {
         var title = ""
         
         switch section {
-        case 0:
+        case SectionNumber.SearchExecute.rawValue:
             title = ""
-        case 1:
-            title = "Conditions"
-        case 2:
-            title = "Options"
-        case 3:
-            title = "Preferences"
+        case SectionNumber.ConditionList.rawValue:
+            title = NSLocalizedString("Conditions", comment: "")
+        case SectionNumber.Options.rawValue:
+            title = NSLocalizedString("Options", comment: "")
+        case SectionNumber.Preferences.rawValue:
+            title = NSLocalizedString("Preferences", comment: "")
         default:
             title = ""
         }
@@ -196,8 +197,46 @@ UITableViewController, UISearchBarDelegate, UITextFieldDelegate {
         var title = ""
         
         switch section {
-        case 0:
+        case SectionNumber.SearchExecute.rawValue:
+            
             title = self.conditionController.isValid().comment
+            
+            if self.conditionController.isValid().valid {
+                
+                let includeText = NSLocalizedString("includes: ", comment: "on SCTVC")
+                let orderText = NSLocalizedString("order", comment: "on SCTVC")
+                title += "  "
+                title += NSLocalizedString("Condition you wrote is below:\n", comment: "on SCTVC")
+                
+                title += "👉 " + self.conditionController.getUnderstandable()
+                
+                title += "\n\n"
+                
+                title += NSLocalizedString("In this, the following words will be searched:\n", comment: "on SCTVC")
+                for l in self.conditionController.getVariableLabels() {
+                    if self.conditionController.isVariableShown(l) {
+                        var fs = self.conditionController.getVariableFilterString(l)
+                        var o = self.conditionController.getVariableOrder(l)
+                        if fs.isEmpty {
+                            title += "👉 ?\(l)"
+                        } else {
+                            title += "👉 ?\(l) (\(includeText) \"\(fs)\")"
+                        }
+                        
+                        if o != SearchConditionVariableOrder.None {
+                            title += " (\(o.toString()) \(orderText))"
+                        }
+                        
+                        if l != self.conditionController.getVariableLabels().last! {
+                            title += "\n"
+                        }
+                    }
+                }
+            }
+        case SectionNumber.Options.rawValue:
+            title = NSLocalizedString("To be fast to show results, Limit is preferred to low. It's recommended to set less than about 200.", comment: "on SCTableVC")
+        case SectionNumber.Preferences.rawValue:
+            title = NSLocalizedString("Input a title that express this search. It's just displayed on the search list and no influence on search results.", comment: "on SCTableVC")
         default:
             break
         }
@@ -210,7 +249,7 @@ UITableViewController, UISearchBarDelegate, UITextFieldDelegate {
         var reuseIdentifier = "Cell"
         
         switch indexPath.section {
-        case 0:  // search execute
+        case SectionNumber.SearchExecute.rawValue:  // search execute
             switch indexPath.row {
             case 0:
                 if self.conditionController.isValid().valid {
@@ -221,64 +260,109 @@ UITableViewController, UISearchBarDelegate, UITextFieldDelegate {
             default:
                 break;
             }
-        case 1:  // conditions
+        case SectionNumber.ConditionList.rawValue:  // conditions
             switch indexPath.row {
             case 0..<self.conditionController.countContidions():
                 reuseIdentifier = "ElementsCell"
                 let cell = tableView.dequeueReusableCellWithIdentifier(reuseIdentifier, forIndexPath: indexPath) as SCElementsTableViewCell
-                
-                var condition = self.conditionController.getCondition(indexPath.row)
-                
-                var str_s = condition.subject.getVariableLabelOrShortValue(prefix: true)
-                var str_p = condition.predicate.getVariableLabelOrShortValue(prefix: true)
-                var str_o = condition.object.getVariableLabelOrShortValue(prefix: true)
-                
-                
-                cell.labelSubject.textColor = UIColor.blackColor()
-                cell.labelPredicate.textColor = UIColor.blackColor()
-                cell.labelObject.textColor = UIColor.blackColor()
 
+                let condition = self.conditionController.getCondition(indexPath.row)
                 
+                let s = condition.subject
+                let p = condition.predicate
+                let o = condition.object
+                
+                let str_s = s.getVariableLabelOrShortValue(prefix: true)
+                let str_p = p.getVariableLabelOrShortValue(prefix: true)
+                let str_o = o.getVariableLabelOrShortValue(prefix: true)
+                
+                let label_s = cell.labelSubject
+                let label_p = cell.labelPredicate
+                let label_o = cell.labelObject
+                
+                
+                label_s.textColor = UIColor.blackColor()
+                label_p.textColor = UIColor.blackColor()
+                label_o.textColor = UIColor.blackColor()
+                
+                let warningEmptyText: String = NSLocalizedString("<Empty>", comment: "warningEmptyText in SCTableVC")
+                let warningVariableLabelEmptyText: String = NSLocalizedString("<Label??>", comment: "warningVariableLabelEmptyText in SCTableVC")
+                let includeText = NSLocalizedString("Incl.", comment: "includeText in SCTableVC")
+
                 if str_s.isEmpty {
-                    cell.labelSubject.text = "<Empty>"
-                    cell.labelSubject.textColor = UIColor.darkGrayColor()
+                    label_s.text = warningEmptyText
+                    label_s.textColor = UIColor.darkGrayColor()
                 } else {
-                    cell.labelSubject.text = str_s
+                    label_s.text = str_s
+                    
+                    if s.variable && s.show && !s.filterString.isEmpty {
+                        label_s.text = "\(label_s.text!) (\(includeText) \"\(s.filterString)\")"
+                    }
                 }
                 
                 if str_p.isEmpty {
-                    cell.labelPredicate.text = "<Empty>"
-                    cell.labelPredicate.textColor = UIColor.darkGrayColor()
+                    label_p.text = warningEmptyText
+                    label_p.textColor = UIColor.darkGrayColor()
                 } else {
-                    cell.labelPredicate.text = str_p
+                    label_p.text = str_p
+                    
+                    if p.variable && p.show && !p.filterString.isEmpty {
+                        label_p.text = "\(label_p.text!) (\(includeText) \"\(p.filterString)\")"
+                    }
                 }
                 
                 if str_o.isEmpty {
-                    cell.labelObject.text = "<Empty>"
-                    cell.labelObject.textColor = UIColor.darkGrayColor()
+                    label_o.text = warningEmptyText
+                    label_o.textColor = UIColor.darkGrayColor()
                 } else {
-                    cell.labelObject.text = str_o
+                    label_o.text = str_o
+                    
+                    if o.variable && o.show && !o.filterString.isEmpty {
+                        label_o.text = "\(label_o.text!) (\(includeText) \"\(o.filterString)\")"
+                    }
                 }
                 
                 if condition.subject.isHidden() {
-                    cell.labelSubject.textColor = UIColor.lightGrayColor()
+                    label_s.textColor = UIColor.lightGrayColor()
                 }
                 if condition.predicate.isHidden() {
-                    cell.labelPredicate.textColor = UIColor.lightGrayColor()
+                    label_p.textColor = UIColor.lightGrayColor()
                 }
                 if condition.object.isHidden() {
-                    cell.labelObject.textColor = UIColor.lightGrayColor()
+                    label_o.textColor = UIColor.lightGrayColor()
                 }
+                
+                
+                if cell.labelSubject.text == "?" && s.variable {
+                    label_s.text = warningVariableLabelEmptyText
+                    label_s.textColor = UIColor.redColor()
+                }
+                if cell.labelPredicate.text == "?" && p.variable {
+                    label_p.text = warningVariableLabelEmptyText
+                    label_p.textColor = UIColor.redColor()
+                }
+                if cell.labelObject.text == "?" && o.variable {
+                    label_o.text = warningVariableLabelEmptyText
+                    label_o.textColor = UIColor.redColor()
+                }
+                
                 
                 return cell
                 
             default:
                 reuseIdentifier = "AddConditionCell"
             }
-        case 2:  // options
+            
+        case SectionNumber.Options.rawValue:  // options
             
             switch indexPath.row {
             case 0:
+                reuseIdentifier = "OrderCell"
+                let cell = tableView.dequeueReusableCellWithIdentifier(reuseIdentifier, forIndexPath: indexPath) as UITableViewCell
+                cell.textLabel?.text = NSLocalizedString("Order by", comment: "on SCTableVC")
+                cell.detailTextLabel?.text = ""
+                return cell
+            case 1:
                 reuseIdentifier = "LimitCell"
                 let cell = tableView.dequeueReusableCellWithIdentifier(reuseIdentifier, forIndexPath: indexPath) as SCLimitTableViewCell
                 cell.limitTextField.text = String(self.conditionController.limit)
@@ -289,6 +373,20 @@ UITableViewController, UISearchBarDelegate, UITextFieldDelegate {
                 break
             }
             
+            break
+        
+        case SectionNumber.Preferences.rawValue: // preferences
+            
+            switch indexPath.row {
+            case 0:
+                reuseIdentifier = "TitleCell"
+                let cell = tableView.dequeueReusableCellWithIdentifier(reuseIdentifier, forIndexPath: indexPath) as SCTitleTableViewCell
+                cell.titleTextField.text = self.conditionController.title
+                cell.titleTextField.addTarget(self, action: "titleTextFieldEditingChanged:", forControlEvents: UIControlEvents.EditingChanged)
+                return cell
+            default:
+                break
+            }
             break
             
         default:
@@ -307,7 +405,7 @@ UITableViewController, UISearchBarDelegate, UITextFieldDelegate {
         
         
         switch indexPath.section {
-        case 0:
+        case SectionNumber.SearchExecute.rawValue:
             switch indexPath.row {
             case 0:
                 self.searchButtonDidTouchUpInside()
@@ -317,7 +415,7 @@ UITableViewController, UISearchBarDelegate, UITextFieldDelegate {
             }
             
             break;
-        case 1:
+        case SectionNumber.ConditionList.rawValue:
             var count = self.conditionController.countContidions()
             
             switch indexPath.row {
@@ -332,10 +430,19 @@ UITableViewController, UISearchBarDelegate, UITextFieldDelegate {
                 self.tableView.reloadSections(NSIndexSet(index: 0),
                     withRowAnimation: UITableViewRowAnimation.Automatic)
             }
+        case SectionNumber.Options.rawValue:
+            switch indexPath.row {
+            case 0:
+                println("Selection order by!")
+                self.performSegueWithIdentifier("ShowSettingVariableOrder", sender: self)
+                break
+            default:
+                break
+            }
+            break
         default:
             break;
         }
-        
     }
     
     override func tableView(tableView: UITableView, heightForRowAtIndexPath indexPath: NSIndexPath) -> CGFloat {
@@ -343,7 +450,7 @@ UITableViewController, UISearchBarDelegate, UITextFieldDelegate {
         var height: CGFloat = self.tableView.rowHeight
         
         switch indexPath.section {
-        case 1:
+        case SectionNumber.ConditionList.rawValue:
             var count = self.conditionController.countContidions()
             
             switch indexPath.row {
@@ -368,7 +475,7 @@ UITableViewController, UISearchBarDelegate, UITextFieldDelegate {
         var count = self.conditionController.countContidions()
         
         switch indexPath.section {
-        case 1:
+        case SectionNumber.ConditionList.rawValue:
             switch indexPath.row {
             case 0..<count:
                 if count == 1 {
@@ -428,6 +535,9 @@ UITableViewController, UISearchBarDelegate, UITextFieldDelegate {
         } else if segue.identifier == "ShowResult" {
             var srTableVC = segue.destinationViewController as SearchResultTableViewController
             srTableVC.result = self.resultController
+        } else if segue.identifier == "ShowSettingVariableOrder" {
+            var voTVC = segue.destinationViewController as VariableOrderTableViewController
+            voTVC.conditionController = self.conditionController
         }
         
         // FIXME: - via switch do not run well??
@@ -442,5 +552,14 @@ UITableViewController, UISearchBarDelegate, UITextFieldDelegate {
         }
         */
     }
+}
 
+private enum SectionNumber: Int {
+    case SearchExecute,
+    ConditionList,
+    Options,
+    Preferences,
+    
+    _count  // dummy
+    static let count = _count.rawValue
 }

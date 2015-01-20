@@ -1,5 +1,5 @@
 //
-//  FSTableViewController.swift
+//  ResourceSearchResultViewController.swift
 //  Lodi
 //
 //  Created by Taishi Ikai on 2014/11/19.
@@ -8,20 +8,25 @@
 
 import UIKit
 
-class FSTableViewController: UITableViewController, UISearchBarDelegate {
+class ResourceSearchResultViewController: UITableViewController, UISearchBarDelegate {
     
     // MARK: - Variables
     
     var searchBar: UISearchBar!
     var conditionController: SearchConditionController!
     
-    //let uri = "http://www.wikipediaontology.org/query/"
-    let uri = "http://ja.dbpedia.org/sparql"
+    let endpointUrl = "http://www.wikipediaontology.org/query/"
+    //let uri = "http://ja.dbpedia.org/sparql"
     //let uri = "http://lod.jxj.jp/sparql"
 
     var connection: LDURLConnection!
+    var dataReceiver: LDDataReceiver!
+    
+    var nextResult: Turtle!
     
     var searchResultController: SearchResultController!
+    
+    var cancelButton: UIBarButtonItem!
     
     // MARK: - Base
 
@@ -34,17 +39,22 @@ class FSTableViewController: UITableViewController, UISearchBarDelegate {
         // Uncomment the following line to display an Edit button in the navigation bar for this view controller.
         // self.navigationItem.rightBarButtonItem = self.editButtonItem()
         
+        self.tableView.estimatedRowHeight = 44
+        self.tableView.rowHeight = UITableViewAutomaticDimension
+        self.tableView.reloadData()
+                
         self.searchBar = UISearchBar()
         self.searchBar.delegate = self
         self.searchBar.keyboardType = UIKeyboardType.Default
         self.navigationItem.titleView = searchBar
         
+        
         self.conditionController = SearchConditionController()
         self.conditionController.addCondition(
             SearchCondition(
-                subject: SearchConditionElement(show: true, value: "", variable: true, variableLabel: "Title"),
-                predicate: SearchConditionElement(show: true, value: "rdf:type/rdfs:subClassOf*", variable: false, variableLabel: ""),
-                object: SearchConditionElement(show: false, value: "", variable: true, variableLabel: "Type"))
+                subject: SearchConditionElement(show: true, value: "", variable: true, variableLabel: "Title", filterString: ""),
+                predicate: SearchConditionElement(show: true, value: "rdf:type/rdfs:subClassOf*", variable: false, variableLabel: "", filterString: ""),
+                object: SearchConditionElement(show: false, value: "", variable: true, variableLabel: "Type", filterString: ""))
         )
         self.conditionController.distinct = true
     }
@@ -71,23 +81,79 @@ class FSTableViewController: UITableViewController, UISearchBarDelegate {
     
     func searchBarSearchButtonClicked(searchBar: UISearchBar) {
 
-        var query = self.conditionController.getQueryString(filter: searchBar.text)
+        // var query = self.conditionController.getQueryString(filter: searchBar.text)
+        
+        var query = join("\n", [
+            "select distinct ?s ?l ?c where {",
+            "   {",
+            "       ?s rdfs:label ?l .",
+            "       ?s rdfs:comment ?c .",
+            "       FILTER regex(?l, \"\(searchBar.text)\")",
+            "   } UNION {",
+            "       ?s rdfs:label ?l .",
+            "       ?s rdfs:comment ?c .",
+            "       FILTER regex(?c, \"\(searchBar.text)\")",
+            "   }",
+            "}"
+            ])
+        println(query)
+        
         searchBar.resignFirstResponder()
         
-        self.connection = LDURLConnection(url: NSURL(string: self.uri)!, completionHandler: { data in
-            self.searchResultController = SearchResultController(xmlData: data)
+        LDURLConnection.showIndicator()
+        self.connection = LDURLConnection(url: NSURL(string: self.endpointUrl)!, completionHandler: { data in
+            self.searchResultController = SearchResultController(jsonData: data)
             
-            if self.searchResultController.parse() {
-                self.tableView.reloadData()
+            if self.searchResultController.parseJson() {
+                LDURLConnection.hideIndicator()
+                self.tableView.reloadSections(NSIndexSet(index: 0), withRowAnimation: UITableViewRowAnimation.Automatic)
             }
             return nil
         })
         self.connection.setRequestMethod("POST")
-        self.connection.setRequestBodyWithPercentEscaping("query=\(query)")
+        self.connection.setRequestBodyWithPercentEscaping("q=\(query)&type=json&limit=\(self.conditionController.limit)")
         self.connection.start()
     }
     
     // MARK: - Events
+    func readyForReceiving() {
+        self.cancelReceiving()
+    }
+    
+    func cancelReceiving() {
+        if var dataReceiver = self.dataReceiver {
+            dataReceiver.cancel()
+        }
+    }
+    
+    func cancelButtonDidTouchUpInside(sender: AnyObject) {
+        self.cancelReceiving()
+    }
+    
+    func cellHasUriDidTouchUpInside(uri: String) {  // FIXME: uri/クエリ決めうち
+        self.readyForReceiving()
+        
+        var query = "CONSTRUCT {\n"  // TODO: make uri/query dynamically
+        query += "<\(uri)> ?p ?o\n"
+        //query += "MINUS { <\(uri)> owl:sameAs ?o }\n"
+        query += "\n}"
+        
+        query += "\n"
+        query += "WHERE {\n"
+        query += "<\(uri)> ?p ?o\n"
+        query += "\n}"
+        
+        println(query)
+        
+        var connection = LDURLConnection(url: NSURL(string: self.endpointUrl)!)
+        connection.setRequestMethod("POST")
+        connection.setRequestBodyWithPercentEscaping("q=\(query)&type=turtle")
+        
+        self.dataReceiver = LDDataReceiver(connection: connection, getTurtleHandler: { turtle in
+            self.nextResult = turtle
+            self.performSegueWithIdentifier("ShowDetail", sender: self)
+        }).start()
+    }
     
     
     // MARK: - Table view data source
@@ -108,12 +174,20 @@ class FSTableViewController: UITableViewController, UISearchBarDelegate {
 
         var reuseIdentifier = "Cell"
         
-        let cell = tableView.dequeueReusableCellWithIdentifier(reuseIdentifier, forIndexPath: indexPath) as UITableViewCell
-
-        cell.textLabel.text = self.searchResultController.resultItems[indexPath.row].bindings[0].shortValue
+        let cell = tableView.dequeueReusableCellWithIdentifier(reuseIdentifier, forIndexPath: indexPath) as ResourceSearchResultTableViewCell
+        
+        cell.labelLabel.text = self.searchResultController.resultItems[indexPath.row].getBinding("l")!.value
+        cell.commentLabel.text = self.searchResultController.resultItems[indexPath.row].getBinding("c")!.value
+        cell.iriLabel.text = self.searchResultController.resultItems[indexPath.row].getBinding("s")!.value
 
         return cell
     }
+    
+    override func tableView(tableView: UITableView, didSelectRowAtIndexPath indexPath: NSIndexPath) {
+        self.cellHasUriDidTouchUpInside(self.searchResultController.resultItems[indexPath.row].getBinding("s")!.value)
+    }
+    
+    
 
     /*
     // Override to support conditional editing of the table view.
@@ -150,14 +224,14 @@ class FSTableViewController: UITableViewController, UISearchBarDelegate {
     }
     */
 
-    /*
     // MARK: - Navigation
 
     // In a storyboard-based application, you will often want to do a little preparation before navigation
     override func prepareForSegue(segue: UIStoryboardSegue, sender: AnyObject?) {
-        // Get the new view controller using [segue destinationViewController].
-        // Pass the selected object to the new view controller.
+        if segue.identifier == "ShowDetail" {
+            var rdtvc = segue.destinationViewController as ResourceDetailTableViewController
+            rdtvc.result = self.nextResult
+        }
     }
-    */
 
 }

@@ -130,9 +130,9 @@ class NTriplesPart {
     
     init(value: String) {
         if value.hasPrefix("<") && value.hasSuffix(">") {
-            self.type = NTriplesPartType.uri
+            self.type = NTriplesPartType.URI
         } else {
-            self.type = NTriplesPartType.literal
+            self.type = NTriplesPartType.Literal
         }
         self.value = value
     }
@@ -143,11 +143,11 @@ class NTriplesPart {
     }
     
     func isUri() -> Bool {
-        return self.type == NTriplesPartType.uri
+        return self.type == NTriplesPartType.URI
     }
     
     func isLiteral() -> Bool {
-        return self.type == NTriplesPartType.literal
+        return self.type == NTriplesPartType.Literal
     }
     
     var shortValue: String? {
@@ -165,5 +165,5 @@ class NTriplesPart {
 }
 
 enum NTriplesPartType {
-    case uri, literal
+    case URI, Literal
 }

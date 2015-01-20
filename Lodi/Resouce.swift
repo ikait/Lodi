@@ -31,17 +31,21 @@ class Resource {
             self.value = value.substringWithRange(Range<String.Index>(
                 start: advance(self.value.startIndex, 1),
                 end: advance(self.value.endIndex, -1)))
+        } else if  value.hasPrefix("\"") && value.hasSuffix("\"") {
+            self.value = value.substringWithRange(Range<String.Index>(
+                start: advance(self.value.startIndex, 1),
+                end: advance(self.value.endIndex, -1)))
         } else {
             self.value = value
         }
     }
     
     func isUri() -> Bool {
-        return self.type == ResourceType.uri
+        return self.type == ResourceType.URI
     }
     
     func isLiteral() -> Bool {
-        return self.type == ResourceType.literal
+        return self.type == ResourceType.Literal
     }
     
     func isWithPrefix() -> Bool {
@@ -96,6 +100,8 @@ class ResourcePrefix {
     }
 }
 
-enum ResourceType {
-    case uri, literal, none
+enum ResourceType: String {
+    case URI = "URI",
+        Literal = "Literal",
+        None = "None"
 }

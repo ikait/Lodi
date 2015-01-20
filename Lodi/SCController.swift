@@ -69,14 +69,15 @@ class SearchConditionControllerSet {
 class SearchConditionController {
     private var conditions: [SearchCondition]
     private var dateCreated = NSDate()
-    private var title: String = ""
+    var title: String = ""
     var keyword: String = ""
-    var endpointUri: String?
+    var endpointUri: String?  // TODO: dbpedia 以外にも対応
     
-    let DefaultEndpointUri = "http://ja.dbpedia.org/sparql"
-    let DefaultLimit: Int = 30
+    //let DefaultEndpointUri = "http://dbpedia.org/sparql"
+    let DefaultEndpointUri = "http://www.wikipediaontology.org/query/"
+    let DefaultLimit: Int = 80
     let DefaultDistinct: Bool = true
-    var limit: Int = 30
+    var limit: Int = 80
     var distinct: Bool = true
     
     //var offset: Int = 0
@@ -176,7 +177,7 @@ class SearchConditionController {
     /// コントローラ下の条件が全て正しいか確認して、正否とコメントを返す
     func isValid() -> (valid: Bool, comment: String) {
         if self.isEmpty() {
-            return (false, "Compose conditions.")
+            return (false, NSLocalizedString("Compose conditions.", comment: ""))
         }
         var hasShownVariable = (true, 0)
         for (index, c) in enumerate(self.conditions) {
@@ -188,7 +189,10 @@ class SearchConditionController {
             }
         }
         if !hasShownVariable.0 {
-            return (false, "Need a shown variable at least. Check at \(hasShownVariable.1 + 1).")
+            // return (false, "Need a shown variable at least. Check at \(hasShownVariable.1 + 1).")
+            var v = String(hasShownVariable.1 + 1)
+            
+            return (false, NSString(format: NSLocalizedString("Need a shown variable at least. Check at %1$@", comment: ""), v))
         }
         
         var allVariable = true
@@ -198,10 +202,10 @@ class SearchConditionController {
             }
         }
         if allVariable {
-            return (false, "Need a condition not variable at least.")
+            return (false, NSLocalizedString("Need a condition not variable at least.", comment: ""))
         }
         
-        return (true, "Ready for search!")
+        return (true, NSLocalizedString("Ready for search!", comment: ""))
     }
     
     /// タイトルを返す。設定されていなければ日付を返す
@@ -237,9 +241,193 @@ class SearchConditionController {
             }
         }
         sort(&variableLabels){ (str1, str2) in
-            return str1 < str2
+            return str1 > str2
         }
         return variableLabels
+    }
+    
+    /// コントローラ下にある変数ラベルとorderを全て取得する
+    func getVariableLabelsAndOrders() -> [String: SearchConditionVariableOrder] {
+        var variableLabelsAndOrders: [String: SearchConditionVariableOrder] = [:]
+        for condition in self.getConditions() {
+            var svl = condition.subject.variableLabel
+            var pvl = condition.predicate.variableLabel
+            var ovl = condition.object.variableLabel
+            if !svl.isEmpty {
+                variableLabelsAndOrders[svl] = condition.subject.orderBy
+            }
+            if !pvl.isEmpty {
+                variableLabelsAndOrders[pvl] = condition.predicate.orderBy
+            }
+            if !ovl.isEmpty {
+                variableLabelsAndOrders[ovl] = condition.object.orderBy
+            }
+        }
+        return variableLabelsAndOrders
+    }
+    
+    /// コントローラ下にある、指定したlabelの変数のorderを設定する
+    func setVariableOrder(label: String, order: SearchConditionVariableOrder) {
+        for condition in self.getConditions() {
+            var s = condition.subject
+            var p = condition.predicate
+            var o = condition.object
+            
+            if s.variableLabel == label {
+                s.orderBy = order
+            }
+            if p.variableLabel == label {
+                p.orderBy = order
+            }
+            if o.variableLabel == label {
+                o.orderBy = order
+            }
+        }
+    }
+    
+    /// コントローラ下にある、指定したlabelの変数のorderを取得する
+    func getVariableOrder(label: String) -> SearchConditionVariableOrder {
+        for condition in self.getConditions() {
+            var s = condition.subject
+            var p = condition.predicate
+            var o = condition.object
+            
+            if s.variableLabel == label {
+                return s.orderBy
+            }
+            if p.variableLabel == label {
+                return p.orderBy
+            }
+            if o.variableLabel == label {
+                return o.orderBy
+            }
+        }
+        return SearchConditionVariableOrder.None
+    }
+    
+    
+    /// 指定したラベルの変数は表示されるか?
+    func isVariableShown(label: String) -> Bool {
+        var isShown = false
+        
+        for condition in self.getConditions() {
+            var s = condition.subject
+            var p = condition.predicate
+            var o = condition.object
+            
+            // when true, immediately true
+            if s.variableLabel == label && s.variable && s.show {
+                isShown = true
+            }
+            if p.variableLabel == label && p.variable && p.show {
+                isShown = true
+            }
+            if o.variableLabel == label && o.variable && o.show {
+                isShown = true
+            }
+        }
+        return isShown
+    }
+    
+    /// コントローラ下にある、指定したlabelの変数の表示を設定する
+    func setVariableShown(label: String, show: Bool) {
+        for condition in self.getConditions() {
+            var s = condition.subject
+            var p = condition.predicate
+            var o = condition.object
+            
+            if s.variableLabel == label {
+                s.show = show
+            }
+            if p.variableLabel == label {
+                p.show = show
+            }
+            if o.variableLabel == label {
+                o.show = show
+            }
+        }
+    }
+    
+    /// コントローラ下にある、指定したlabelの変数の表示を設定する
+    func setVariableFilterString(label: String, filterString: String) {
+        for condition in self.getConditions() {
+            var s = condition.subject
+            var p = condition.predicate
+            var o = condition.object
+            
+            if s.variableLabel == label {
+                s.filterString = filterString
+            }
+            if p.variableLabel == label {
+                p.filterString = filterString
+            }
+            if o.variableLabel == label {
+                o.filterString = filterString
+            }
+        }
+    }
+    
+    func getVariableFilterString(label: String) -> String {
+        for condition in self.getConditions() {
+            var s = condition.subject
+            var p = condition.predicate
+            var o = condition.object
+            
+            if s.variableLabel == label {
+                return s.filterString
+            }
+            if p.variableLabel == label {
+                return p.filterString
+            }
+            if o.variableLabel == label {
+                return o.filterString
+            }
+        }
+        return ""
+    }
+    
+    /// 変数とフィルター文字列を得る
+    func getVariablesWithFilterString() -> [String: String] {
+        var variablesWithFilterString: [String: String] = [:]
+        
+        for condition in self.getConditions() {
+            var s = condition.subject
+            var p = condition.predicate
+            var o = condition.object
+            
+            if s.isValid().valid && s.variable && !s.filterString.isEmpty {
+                variablesWithFilterString[s.variableLabel] = s.filterString
+            }
+            if p.isValid().valid && p.variable && !p.filterString.isEmpty {
+                variablesWithFilterString[p.variableLabel] = p.filterString
+            }
+            if o.isValid().valid && o.variable && !o.filterString.isEmpty {
+                variablesWithFilterString[o.variableLabel] = o.filterString
+            }
+        }
+        return variablesWithFilterString
+    }
+    
+    func getUnderstandable() -> String {
+        var understandable = ""
+        for (index, condition) in enumerate(self.conditions) {
+            
+            understandable += NSString(format: NSLocalizedString(
+                "%1$@ %2$@ %3$@",
+                comment: "understandable on SCController. 1:s, 2:p, 3:o"),
+                condition.subject.getVariableLabelOrShortValue(prefix: true),
+                condition.predicate.getVariableLabelOrShortValue(prefix: true),
+                condition.object.getVariableLabelOrShortValue(prefix: true)
+            )
+            
+            if index == self.conditions.count - 1 {
+                understandable += NSLocalizedString(".", comment: "understandable period on SCController")
+            } else {
+                understandable += NSLocalizedString(",\n", comment: "understandable comma on SCController")
+            }
+        }
+        
+        return understandable
     }
     
     /// SPARQLクエリを組み立てて、返す
@@ -249,29 +437,45 @@ class SearchConditionController {
         
         if let distinct = distinct {
             if distinct {
-                queryString = "\(queryString) distinct"
+                queryString += " distinct"
             }
         } else if self.distinct {
-            queryString = "\(queryString) distinct"
+            queryString += " distinct"
         }
         
+        var addedVariableLabelSet = NSMutableSet()
         for condition in self.conditions {
             var s = condition.subject
             var p = condition.predicate
             var o = condition.object
             
             if s.variable && s.show {
-                queryString = "\(queryString) \(s.getVariableLabelWithPrefix())"
+                var labelWithPrefix = s.getVariableLabelWithPrefix()
+                
+                if !addedVariableLabelSet.containsObject(labelWithPrefix) {
+                    queryString = "\(queryString) \(labelWithPrefix)"
+                    addedVariableLabelSet.addObject(labelWithPrefix)
+                }
             }
             if p.variable && p.show {
-                queryString = "\(queryString) \(p.getVariableLabelWithPrefix())"
+                var labelWithPrefix = p.getVariableLabelWithPrefix()
+                
+                if !addedVariableLabelSet.containsObject(labelWithPrefix) {
+                    queryString = "\(queryString) \(labelWithPrefix)"
+                    addedVariableLabelSet.addObject(labelWithPrefix)
+                }
             }
             if o.variable && o.show {
-                queryString = "\(queryString) \(o.getVariableLabelWithPrefix())"
+                var labelWithPrefix = o.getVariableLabelWithPrefix()
+                
+                if !addedVariableLabelSet.containsObject(labelWithPrefix) {
+                    queryString = "\(queryString) \(labelWithPrefix)"
+                    addedVariableLabelSet.addObject(labelWithPrefix)
+                }
             }
         }
         
-        queryString = "\(queryString) where {"
+        queryString += " where {\n"  // where句付け足し
         
         for (index, condition) in enumerate(self.conditions) {
             
@@ -279,26 +483,61 @@ class SearchConditionController {
             var p = condition.predicate.getVariableLabelOrValue(prefix: true)
             var o = condition.object.getVariableLabelOrValue(prefix: true)
             
-            queryString = "\(queryString) \(s)"
-            queryString = "\(queryString) \(p)"
-            queryString = "\(queryString) \(o) ."
-
+            queryString += "\t\(s)"
+            queryString += " \(p)"
+            queryString += " \(o) .\n"
+            
+            //==================================================================
+            //queryString += "\tMINUS { \(s) owl:sameAs \(o) }\n"
+            //queryString += "\tMINUS { \(s) dbpedia-owl:wikiPageWikiLink \(o) }\n"
+            //==================================================================
             
             if index == self.conditions.count - 1 {
+                
                 if let filter = filter {
-                    queryString = "\(queryString) FILTER regex (\(s), \"\(filter)\")"
+                    queryString += "\tFILTER regex (\(s), \"\(filter)\")\n"
+                }
+                
+                for variableAndFilterString in self.getVariablesWithFilterString() {
+                    queryString += "\tFILTER regex (?\(variableAndFilterString.0), \"\(variableAndFilterString.1)\")\n"
                 }
             }
         }
         
-        queryString = "\(queryString) }"
         
-        if let limit = limit {
-            queryString = "\(queryString) LIMIT \(limit)"
-        } else if self.limit != 0 {
-            queryString = "\(queryString) LIMIT \(self.limit)"
+        queryString += "}"
+        
+        var sortCriteria: [String: SearchConditionVariableOrder] = [:]
+        for condition in self.conditions {
+            if condition.subject.variable && condition.subject.orderBy != SearchConditionVariableOrder.None {
+                sortCriteria[condition.subject.variableLabel] = condition.subject.orderBy
+            }
+            if condition.predicate.variable && condition.predicate.orderBy != SearchConditionVariableOrder.None {
+                sortCriteria[condition.predicate.variableLabel] = condition.predicate.orderBy
+            }
+            if condition.object.variable && condition.object.orderBy != SearchConditionVariableOrder.None {
+                sortCriteria[condition.object.variableLabel] = condition.object.orderBy
+            }
         }
+        if sortCriteria.count > 0 {
+            queryString += "\nORDER BY"
+            for c in sortCriteria {
+                if c.1 == SearchConditionVariableOrder.Ascend {
+                    queryString += " ?\(c.0)"
+                } else {
+                    queryString += " DESC(?\(c.0))"
+                }
+            }
+        }
+        
+        /*
+        if let limit = limit {
+            queryString += "\nLIMIT \(limit)"
+        } else if self.limit != 0 {
+            queryString += "\nLIMIT \(self.limit)"
+        }*/
     
+        println(queryString)
         return queryString
     }
 }
@@ -312,12 +551,20 @@ class SearchCondition {
         self.subject = subject
         self.predicate = predicate
         self.object = object
+        
+        self.subject.position = SearchConditionPosition.Subject
+        self.predicate.position = SearchConditionPosition.Predicate
+        self.object.position = SearchConditionPosition.Object
     }
     
     init() {
         self.subject = SearchConditionElement()
         self.predicate = SearchConditionElement()
         self.object = SearchConditionElement()
+        
+        self.subject.position = SearchConditionPosition.Subject
+        self.predicate.position = SearchConditionPosition.Predicate
+        self.object.position = SearchConditionPosition.Object
     }
     
     /// 条件が空かどうか？
@@ -333,7 +580,7 @@ class SearchCondition {
     /// 正当な条件になっているか？正否とコメントを返す
     func isValid() -> (valid: Bool, comment: String) {
         if self.isAllVariable() {
-            // return (false, "A condition needs a keyword at least.")
+            // return (false, NSLocalizedString("A condition needs a keyword at least.", comment: ""))
         }
         if !self.subject.isValid().valid {
             return (false, self.subject.isValid().comment)
@@ -375,6 +622,11 @@ class SearchConditionElement {
     var variable: Bool
     var variableLabel: String
     
+    var position: SearchConditionPosition!
+    
+    var orderBy: SearchConditionVariableOrder = SearchConditionVariableOrder.None
+    var filterString: String = ""
+    
     /// デフォルト. isEmptyなどにも影響
     let defaultSetting = (variable: false, show: true)
     
@@ -385,11 +637,12 @@ class SearchConditionElement {
         self.variableLabel = ""
     }
     
-    init(show: Bool, value: String, variable: Bool, variableLabel: String) {
+    init(show: Bool, value: String, variable: Bool, variableLabel: String, filterString: String) {
         self.show = show
         self.value = value
         self.variable = variable
         self.variableLabel = variableLabel
+        self.filterString = filterString
     }
     
     /// 非表示設定の変数かどうか？
@@ -413,10 +666,10 @@ class SearchConditionElement {
     /// 正当な要素であるか？正否とコメントを返す
     func isValid() -> (valid: Bool, comment: String) {
         if self.variable && self.variableLabel.isEmpty {
-            return (false, "Need to fill label if it's a variable.")
+            return (false, NSLocalizedString("Need to fill label if it's a variable.", comment: ""))
         }
         if !self.variable && self.value.isEmpty {
-            return (false, "Need to fill keyword.")
+            return (false, NSLocalizedString("Need to fill keyword.", comment: ""))
         }
         return (true, "")
     }
@@ -461,4 +714,29 @@ class SearchConditionElement {
                 NSCharacterSet(charactersInString: "#/"))
         return c.last!
     }
+}
+
+enum SearchConditionVariableOrder: String {
+    case None = "None",
+    Ascend = "Ascending",
+    Descend = "Descending"
+    
+    func toString() -> String {
+        switch self {
+        case SearchConditionVariableOrder.Ascend:
+            return NSLocalizedString("Ascending", comment: "SearchConditionVariableOrder.Ascend")
+        case SearchConditionVariableOrder.Descend:
+            return NSLocalizedString("Descending", comment: "SearchConditionVariableOrder.Descend")
+        case SearchConditionVariableOrder.None:
+            return NSLocalizedString("None", comment: "SearchConditionVariableOrder.None")
+        default:
+            return ""
+        }
+    }
+    
+    static let allValues = [None, Ascend, Descend]
+}
+
+enum SearchConditionPosition {
+    case Subject, Predicate, Object
 }

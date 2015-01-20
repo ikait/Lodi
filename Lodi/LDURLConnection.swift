@@ -54,6 +54,7 @@ class LDURLConnection: NSObject, NSURLConnectionDataDelegate {
         self.connection = NSURLConnection(request: self.request, delegate: self, startImmediately: false)
         self.receivedData = NSMutableData()
         
+        
         // Go
         self.queue.addOperationWithBlock({
             if var connection = self.connection {
@@ -133,6 +134,10 @@ class LDURLConnection: NSObject, NSURLConnectionDataDelegate {
             }
         }
         self.finish()
+    }
+    
+    class func generateEncodedUrl(url: String) -> String? {
+        return url.stringByAddingPercentEncodingWithAllowedCharacters(NSCharacterSet.URLQueryAllowedCharacterSet())
     }
     
     class func showIndicator() {

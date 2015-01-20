@@ -29,6 +29,26 @@ class RawQuerySearchViewController: UIViewController {
         NSLog("%@", "Loaded RQS.")
 
         // Do any additional setup after loading the view.
+        
+        var toolbar = UIToolbar()
+        toolbar.barStyle = UIBarStyle.Default
+        toolbar.items = [
+            UIBarButtonItem(barButtonSystemItem: UIBarButtonSystemItem.FlexibleSpace, target: nil, action: nil),
+            UIBarButtonItem(
+                title: NSLocalizedString("Done", comment: ""),
+                style: UIBarButtonItemStyle.Bordered,
+                target: self,
+                action: "done")
+        ]
+        toolbar.sizeToFit()
+        
+        if let rawQueryTextField = self.rawQueryTextField {
+            rawQueryTextField.inputAccessoryView = toolbar
+        }
+    }
+    
+    func done() {
+        self.rawQueryTextField.resignFirstResponder()
     }
 
     override func didReceiveMemoryWarning() {
@@ -51,7 +71,7 @@ class RawQuerySearchViewController: UIViewController {
                 return nil
         })
         self.connection.setRequestMethod("POST")
-        self.connection.setRequestBodyWithPercentEscaping("query=\(self.rawQueryTextField.text)")
+        self.connection.setRequestBodyWithPercentEscaping("q=\(self.rawQueryTextField.text)")
         self.connection.start()
     }
     

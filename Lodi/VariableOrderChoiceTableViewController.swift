@@ -1,24 +1,22 @@
 //
-//  SCLabelTableViewController.swift
+//  VariableOrderChoiceTableViewController.swift
 //  Lodi
 //
-//  Created by Taishi Ikai on 2014/11/19.
-//  Copyright (c) 2014年 Taishi Ikai. All rights reserved.
+//  Created by Taishi Ikai on 2015/01/16.
+//  Copyright (c) 2015年 Taishi Ikai. All rights reserved.
 //
 
 import UIKit
 
-class SCLabelTableViewController: UITableViewController {
+class VariableOrderChoiceTableViewController: UITableViewController {
     
-    // MARK: - Variables
-
-    var editingElement: SearchConditionElement!
     var conditionController: SearchConditionController!
     
-    var variableLabels: [String] = []
+    var dic: [String: SearchConditionVariableOrder] = [:]
+    var keysArray: [String] = []
     
-    // MARK: - Base
-    
+    var editingVariableLabel: String!
+
     override func viewDidLoad() {
         super.viewDidLoad()
 
@@ -28,67 +26,61 @@ class SCLabelTableViewController: UITableViewController {
         // Uncomment the following line to display an Edit button in the navigation bar for this view controller.
         // self.navigationItem.rightBarButtonItem = self.editButtonItem()
         
-        self.tableView.rowHeight = 44
-        
-        // to fix issue tabbar covers tableview
-        // * there is no self.tabbarController when it presents modally
-        self.edgesForExtendedLayout = UIRectEdge.All
-        self.tableView.contentInset.bottom = 49  // XXX
+        self.navigationItem.title = "?" + self.editingVariableLabel
     }
+    
+    func set() {
+        self.dic = self.conditionController.getVariableLabelsAndOrders()
+        self.keysArray = dic.keys.array
+    }
+    
+    override func viewWillAppear(animated: Bool) {
+        self.set()
+        self.tableView.reloadData()
+    }
+
 
     override func didReceiveMemoryWarning() {
         super.didReceiveMemoryWarning()
         // Dispose of any resources that can be recreated.
     }
-    
-    override func viewWillAppear(animated: Bool) {
-        // 入力済みの変数ラベルを取得
-        self.variableLabels = self.conditionController.getVariableLabels()
-        self.tableView.reloadSections(NSIndexSet(index: 1), withRowAnimation: UITableViewRowAnimation.Automatic)
-    }
-    
-    
-    // MARK: - Action
-    
-    func variableLabelTextFieldEditingChanged(sender: UITextField) {
-        editingElement.variableLabel = sender.text
-    }
-    
-    
+
     // MARK: - Table view data source
-    
+
     override func numberOfSectionsInTableView(tableView: UITableView) -> Int {
-        return 2
+        return 1
     }
 
     override func tableView(tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         switch section {
         case 0:
-            return 1
-        case 1:
-            return self.variableLabels.count
+            return SearchConditionVariableOrder.allValues.count
         default:
-            break
+            return 0
         }
-        return 1
     }
 
     override func tableView(tableView: UITableView, cellForRowAtIndexPath indexPath: NSIndexPath) -> UITableViewCell {
+        
         var reuseIdentifier = "Cell"
         
         switch indexPath.section {
         case 0:
-            reuseIdentifier = "InputLabelCell"
-            var cell = tableView.dequeueReusableCellWithIdentifier(reuseIdentifier, forIndexPath: indexPath) as SCLabelInputTableViewCell
-            cell.variableLabelTextField.keyboardType = UIKeyboardType.NumbersAndPunctuation
-            cell.variableLabelTextField.addTarget(self, action: "variableLabelTextFieldEditingChanged:", forControlEvents: UIControlEvents.EditingChanged)
-            return cell
-        case 1:
-            reuseIdentifier = "ChooseLabelCell"
-            var cell = tableView.dequeueReusableCellWithIdentifier(reuseIdentifier, forIndexPath: indexPath) as SCLabelChooseTableViewCell
-            cell.variableLabelLabel.text = self.variableLabels[indexPath.row]
+            let cell = tableView.dequeueReusableCellWithIdentifier(reuseIdentifier, forIndexPath: indexPath) as UITableViewCell
             
-            if self.variableLabels[indexPath.row] == self.editingElement.variableLabel {
+            var order = SearchConditionVariableOrder.allValues[indexPath.row]
+            
+            if order == SearchConditionVariableOrder.Descend {
+                cell.textLabel?.text = SearchConditionVariableOrder.Descend.toString()
+            } else if order == SearchConditionVariableOrder.Ascend {
+                cell.textLabel?.text = SearchConditionVariableOrder.Ascend.toString()
+            } else if order == SearchConditionVariableOrder.None {
+                cell.textLabel?.text = SearchConditionVariableOrder.None.toString()
+            } else {
+                cell.textLabel?.text = order.rawValue
+            }
+            
+            if order.rawValue == self.dic[editingVariableLabel]?.rawValue {
                 cell.accessoryType = UITableViewCellAccessoryType.Checkmark
             } else {
                 cell.accessoryType = UITableViewCellAccessoryType.None
@@ -98,43 +90,46 @@ class SCLabelTableViewController: UITableViewController {
             break
         }
         
-        var cell = tableView.dequeueReusableCellWithIdentifier(reuseIdentifier, forIndexPath: indexPath) as UITableViewCell
-        
+        let cell = tableView.dequeueReusableCellWithIdentifier(reuseIdentifier, forIndexPath: indexPath) as UITableViewCell
+
         return cell
     }
     
-    override func tableView(tableView: UITableView, titleForHeaderInSection section: Int) -> String? {
+    override func tableView(tableView: UITableView, didUnhighlightRowAtIndexPath indexPath: NSIndexPath) {
+        //self.tableView.reloadData()
         
-        switch section {
-        case 0:
-            return NSLocalizedString("Input Manually", comment: "")
-        case 1:
-            return NSLocalizedString("Choose Already Inputted", comment: "")
-        default:
-            return ""
-        }
-    }
-    
-    override func tableView(tableView: UITableView, titleForFooterInSection section: Int) -> String? {
-        switch section {
-        case 0:
-            return NSLocalizedString("This label must be half-width alphanumeric.", comment: "on SCLabelTVC")
-        default:
-            return ""
-        }
     }
     
     override func tableView(tableView: UITableView, didSelectRowAtIndexPath indexPath: NSIndexPath) {
-        switch indexPath.section {
-        case 1:
-            self.editingElement.variableLabel = self.variableLabels[indexPath.row]
-            self.tableView.reloadSections(NSIndexSet(index: indexPath.section), withRowAnimation: UITableViewRowAnimation.Automatic)
+        
+        //self.tableView.deselectRowAtIndexPath(indexPath, animated: true)
+        
+        self.conditionController.setVariableOrder(self.editingVariableLabel, order: SearchConditionVariableOrder.allValues[indexPath.row])
+        self.set()
+        
+        self.tableView.reloadSections(NSIndexSet(index: indexPath.section), withRowAnimation: UITableViewRowAnimation.Automatic)
+        
+    }
+    
+    override func tableView(tableView: UITableView, titleForFooterInSection section: Int) -> String? {
+        var title = ""
+        var order = self.conditionController.getVariableOrder(self.editingVariableLabel)
+        
+        switch section {
+        case 0:
+            if order != SearchConditionVariableOrder.None {
+                title = NSString(format: NSLocalizedString("This search result will be shown sorted in %1$@ order based ?%2$@.", comment: "on VariableOrderChoiceTVC"),
+                    order.toString(),
+                    self.editingVariableLabel
+                )
+            }
             break
         default:
             break
         }
+        return title
     }
-
+    
     /*
     // Override to support conditional editing of the table view.
     override func tableView(tableView: UITableView, canEditRowAtIndexPath indexPath: NSIndexPath) -> Bool {

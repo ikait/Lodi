@@ -1,0 +1,120 @@
+/* understandable on SCController. 1:s, 2:p, 3:o */
+"%1$@ %2$@ %3$@" = "%1$@ の %2$@ は %3$@";
+
+/* understandable comma on SCController */
+",\n" = "であり、\n";
+
+/* understandable period on SCController */
+"." = "である。";
+
+/* warningEmptyText in SCTableVC */
+"<Empty>" = "<未設定>";
+
+/* warningVariableLabelEmptyText in SCTableVC */
+"<Label??>" = "ラベル未設定";
+
+/* No comment provided by engineer. */
+"A condition needs a keyword at least." = "条件には少なくとも1つのキーワードを含む必要があります。";
+
+/* SearchConditionVariableOrder on SVOTVC */
+"Ascending" = "昇順";
+
+/* Cancel in UIAlertAction */
+"Cancel" = "キャンセル";
+
+/* No comment provided by engineer. */
+"Choose Already Inputted" = "既に入力されているものから選ぶ";
+
+/* No comment provided by engineer. */
+"Compose conditions." = "条件を設定してください。";
+
+/* on SCTVC */
+"Condition you wrote is below:\n" = "設定されている条件は以下の通り:\n";
+
+/* No comment provided by engineer. */
+"Conditions" = "条件";
+
+/* on KeywordExamplesTVC */
+"Delete a keyword" = "キーワードを一旦削除する";
+
+/* SearchConditionVariableOrder on SVOTVC */
+"Descending" = "降順";
+
+/* No comment provided by engineer. */
+"Done" = "完了";
+
+/* on SCTVC */
+"In this, the following words will be searched:\n" = "この中で、次の語句が検索され、表示されます:\n";
+
+/* includeText in SCTableVC */
+"Incl." = "含む";
+
+/* No comment provided by engineer. */
+"Input Manually" = "自分で入力";
+
+/* on SCTableVC */
+"Input a title that express this search. It's just displayed on the search list and no influence on search results." = "この検索を表すタイトルを付けて下さい。タイトルは検索リストに表示するために便宜的に使用するもので、検索結果には影響を及ぼしません。";
+
+/* A label text in SCKeywordCandidateVC */
+"Manual input..." = "自分で入力する...";
+
+/* No comment provided by engineer. */
+"Need a condition not variable at least." = "条件には少なくとも1つのキーワードを含む必要があります。";
+
+/* No comment provided by engineer. */
+"Need a shown variable at least. Check at %1$@" = "条件には少なくとも1つの表示させる変数が必要です。%1$@つ目の条件を確認して下さい。";
+
+/* No comment provided by engineer. */
+"Need to fill keyword." = "<未設定> のキーワードを入力して下さい。";
+
+/* No comment provided by engineer. */
+"Need to fill label if it's a variable." = "変数にはラベルが必要です。ラベルを入力して下さい。";
+
+/* SearchConditionVariableOrder on SVOTVC */
+"None" = "並び替えない";
+
+/* section title in SCInputTableVC */
+"Object" = "目的語";
+
+/* No comment provided by engineer. */
+"Options" = "検索オプション";
+
+/* on SCTableVC */
+"Order by" = "並び替えの基準となる変数";
+
+/* section title in SCInputTableVC */
+"Predicate" = "述語";
+
+/* No comment provided by engineer. */
+"Preferences" = "その他の設定";
+
+/* No comment provided by engineer. */
+"Ready for search!" = "検索準備完了!";
+
+/* No comment provided by engineer. */
+"Search Results" = "検索結果";
+
+/* section title in SCInputTableVC */
+"Subject" = "主語";
+
+/* on SCLabelTVC */
+"This label must be half-width alphanumeric." = "ラベルは半角英数である必要があります。";
+
+/* on VariableOrderChoiceTVC */
+"This search result will be shown sorted in %1$@ order based ?%2$@." = "この設定により、検索結果は ?%2$@ を基にした %1$@ に並び替えられて表示されます。";
+
+/* on SCTableVC */
+"To be fast to show results, Limit is preferred to low. It's recommended to set less than about 200." = "検索結果を早く表示させるには、最大数を小さくします。200未満を推奨します。";
+
+/* in SettingVariableOrderTVC */
+"Variables" = "変数";
+
+/* SRTableVCで選択された際 */
+"Which do you choose?" = "どれを検索しますか？";
+
+/* on SCTVC */
+"includes: " = "ただし次の文字を含む: ";
+
+/* on SCTVC */
+"order" = "で並べる";
+

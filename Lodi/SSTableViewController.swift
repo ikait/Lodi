@@ -17,6 +17,7 @@ class SSTableViewController: UITableViewController {
     var conditionControllerSet = SearchConditionControllerSet()
 
     var resultController: SearchResultController!
+    var dataReceiver: LDDataReceiver!
     
     var connection: LDURLConnection!
     
@@ -39,25 +40,47 @@ class SSTableViewController: UITableViewController {
         /*---------------------------------------------------------------------*/
         // MARK: - DEBUG!!
         self.conditionControllerSet.appendController(
-            SearchConditionController(title: "TEST", conditions: [
+            SearchConditionController(title: "東京都を検索", conditions: [
                 SearchCondition(
                     subject: SearchConditionElement(show: false,
-                        value: "<http://ja.dbpedia.org/resource/千代田区>",
-                        variable: false, variableLabel: ""),
+                        value: "<http://www.wikipediaontology.org/instance/東京都>",
+                        variable: false, variableLabel: "", filterString: ""),
                     predicate: SearchConditionElement(show: true,
                         value: "",
-                        variable: true, variableLabel: "p"),
+                        variable: true, variableLabel: "p", filterString: ""),
                     object: SearchConditionElement(show: true,
                         value: "",
-                        variable: true, variableLabel: "o"))
+                        variable: true, variableLabel: "o", filterString: ""))
             ])
+        )
+        
+        
+        self.conditionControllerSet.appendController(
+            SearchConditionController(title: "オのつく自動車メーカー", conditions: [
+                SearchCondition(
+                    subject: SearchConditionElement(show: true,
+                        value: "",
+                        variable: true, variableLabel: "maker", filterString: "オ"),
+                    predicate: SearchConditionElement(show: true,
+                        value: "<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>",
+                        variable: false, variableLabel: "", filterString: ""),
+                    object: SearchConditionElement(show: true,
+                        value: "<http://www.wikipediaontology.org/class/自動車メーカー>",
+                        variable: false, variableLabel: "", filterString: ""))
+                ])
         )
         /*---------------------------------------------------------------------*/
 
+        // to fix issue tabbar covers tableview
+        // * there is no self.tabbarController when it presents modally
+        self.edgesForExtendedLayout = UIRectEdge.All
+        self.tableView.contentInset.bottom = 49  // XXX
     }
     
     override func viewDidDisappear(animated: Bool) {
-        self.finish()
+        if let dataReceiver = self.dataReceiver {
+            dataReceiver.cancel()
+        }
     }
     
     override func viewWillAppear(animated: Bool) {
@@ -74,16 +97,26 @@ class SSTableViewController: UITableViewController {
     
     // MARK: - Events
     
-    func ready() {
-        self.finish()
-        self.finished = false
+    func readyForReceiving() {
+        self.cancelReceiving()
     }
     
-    func finish() {
-        if let connection = self.connection {
-            connection.cancel()
+    func cancelReceiving() {
+        if var dataReceiver = self.dataReceiver {
+            dataReceiver.cancel()
         }
-        self.finished = true
+    }
+    
+    func validConditionCellDidTouchUpInside(scc: SearchConditionController) {
+        var query = scc.getQueryString() as String
+        connection = LDURLConnection(url: conditionController.getEndpointUri()!)
+        self.connection.setRequestMethod("POST")
+        self.connection.setRequestBodyWithPercentEscaping("q=\(query)&type=json&limit=\(self.conditionController.limit)")
+        
+        self.dataReceiver = LDDataReceiver(connection: self.connection, getJsonHandler: { resultController in
+            self.resultController = resultController
+            self.performSegueWithIdentifier("ShowResult", sender: self)
+        }).start()
     }
     
     @IBAction func composeConditionButtonDidTouchUpInside(sender: AnyObject) {
@@ -92,24 +125,6 @@ class SSTableViewController: UITableViewController {
         self.conditionController = SearchConditionController()
         
         self.performSegueWithIdentifier("ComposeCondition", sender: self)
-    }
-    
-    func validConditionCellDidTouchUpInside(scc: SearchConditionController) {
-        self.ready()
-
-        var query = scc.getQueryString() as String
-        connection = LDURLConnection(url: conditionController.getEndpointUri()!, completionHandler: { data in
-            self.resultController = SearchResultController(xmlData: data)
-            if self.resultController.parse() {
-                if !self.finished {
-                    self.performSegueWithIdentifier("ShowResult", sender: self)
-                }
-            }
-            return nil
-        })
-        self.connection.setRequestMethod("POST")
-        self.connection.setRequestBodyWithPercentEscaping("query=\(query)")
-        self.connection.start()
     }
     
     
@@ -145,7 +160,7 @@ class SSTableViewController: UITableViewController {
         
         var conditionController = self.conditionControllerSet.getControllerAtIndex(indexPath.row)
 
-        cell.textLabel.text = conditionController.getTitle()
+        cell.textLabel?.text = conditionController.getTitle()
         cell.detailTextLabel?.text = conditionController.isValid().comment
 
         return cell

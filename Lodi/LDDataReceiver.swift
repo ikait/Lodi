@@ -39,6 +39,31 @@ class LDDataReceiver {
         }
     }
     
+    init(connection: LDURLConnection, getJsonHandler successHandler: (SearchResultController -> ())) {
+        self.connection = connection
+        self.connection?.completionHandler = { data in
+            var result = SearchResultController(jsonData: data)
+            var parseOperation = NSBlockOperation()
+            parseOperation.addExecutionBlock({
+                if result.parseJson({
+                    if parseOperation.cancelled {
+                        LDURLConnection.hideIndicator()
+                        return true
+                    }
+                    return false
+                }) {
+                    NSOperationQueue.mainQueue().addOperationWithBlock({
+                        successHandler(result)
+                        LDURLConnection.hideIndicator()
+                    })
+                }
+            })
+            self.queue.addOperation(parseOperation)
+            return nil
+        }
+    }
+    
+    
     func cancel() {
         if var connection = self.connection {
             connection.cancel()
